@@ -10,6 +10,7 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { AppLayout } from '@/layouts/AppLayout';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { Viewer3DTestPage } from '@/pages/Viewer3DTestPage';
+import { TreatmentViewer } from '@/modules/treatment';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             <Route path={ROUTES.CASES_NEW} element={<NewCasePage />} />
             <Route path="/cases/:id" element={<CaseDetailPage />} />
             <Route path="/cases/:id/ai" element={<AIProcessingPage />} />
+            <Route path="/cases/:id/treatment" element={<TreatmentViewer />} />
             <Route path={ROUTES.BILLING} element={<PlaceholderPage title="Billing" />} />
             <Route path={ROUTES.ADMIN} element={<PlaceholderPage title="Admin" />} />
             <Route path="/settings" element={<PlaceholderPage title="Settings" />} />

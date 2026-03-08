@@ -10,6 +10,9 @@ from app.models.case_note import CaseNote
 from app.models.tooth_instruction import ToothInstruction
 from app.models.segmentation_result import SegmentationResult
 from app.models.correction import Correction
+from app.models.treatment_plan import TreatmentPlan
+from app.models.treatment_step import TreatmentStep
+from app.models.tooth_transform import ToothTransform
 
 __all__ = [
     "User",
@@ -21,4 +24,7 @@ __all__ = [
     "ToothInstruction",
     "SegmentationResult",
     "Correction",
+    "TreatmentPlan",
+    "TreatmentStep",
+    "ToothTransform",
 ]

@@ -22,11 +22,11 @@ const DEV_FILES = [
   { label: 'Dr Hamid Lower', path: "/Users/umairsuraj/Downloads/02022026-dr hamid's Case-lowerjaw.stl" },
 ];
 
-const SIDE_TABS = [
+type SideTab = 'results' | 'corrections';
+const ALL_SIDE_TABS: { id: SideTab; label: string; icon: typeof BarChart3; techOnly?: boolean }[] = [
   { id: 'results', label: 'Results', icon: BarChart3 },
-  { id: 'corrections', label: 'Corrections', icon: Wrench },
-] as const;
-type SideTab = (typeof SIDE_TABS)[number]['id'];
+  { id: 'corrections', label: 'Corrections', icon: Wrench, techOnly: true },
+];
 
 interface AIResult {
   teeth_found: number[];
@@ -159,6 +159,14 @@ export function AIProcessingPage() {
               <><Play className="mr-1 h-3.5 w-3.5" />Run AI Segmentation</>
             )}
           </Button>
+          {aiResult && caseId && (
+            <Link
+              to={`/cases/${caseId}/treatment`}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+            >
+              Proceed to Treatment Planning →
+            </Link>
+          )}
         </div>
       </div>
 
@@ -193,7 +201,7 @@ export function AIProcessingPage() {
         <div className="w-80 flex-shrink-0 overflow-y-auto">
           {/* Tab switcher */}
           <div className="mb-3 flex gap-1 rounded-lg bg-gray-100 p-1">
-            {SIDE_TABS.map((tab) => (
+            {ALL_SIDE_TABS.filter(tab => !tab.techOnly || isTechnician).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setSideTab(tab.id)}
@@ -300,7 +308,7 @@ export function AIProcessingPage() {
             </Card>
           )}
 
-          {/* Corrections tab */}
+          {/* Corrections tab (only visible to technicians) */}
           {sideTab === 'corrections' && !aiResult && (
             <Card>
               <CardContent className="py-8 text-center text-sm text-gray-400">
@@ -309,15 +317,7 @@ export function AIProcessingPage() {
             </Card>
           )}
 
-          {sideTab === 'corrections' && aiResult && !isTechnician && (
-            <Card>
-              <CardContent className="py-8 text-center text-sm text-gray-400">
-                Only technicians can submit corrections.
-              </CardContent>
-            </Card>
-          )}
-
-          {sideTab === 'corrections' && aiResult && isTechnician && (
+          {sideTab === 'corrections' && aiResult && (
             <div className="space-y-4">
               <Card>
                 <CardHeader><CardTitle className="text-sm">Correction Mode</CardTitle></CardHeader>

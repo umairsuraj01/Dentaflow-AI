@@ -205,3 +205,12 @@ class CorrectionType(str, Enum):
     BOUNDARY_FIX = "BOUNDARY_FIX"
     MISSING_TOOTH = "MISSING_TOOTH"
     EXTRA_SEGMENT = "EXTRA_SEGMENT"
+
+
+class TreatmentPlanStatus(str, Enum):
+    """Lifecycle stages of a treatment plan."""
+
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"

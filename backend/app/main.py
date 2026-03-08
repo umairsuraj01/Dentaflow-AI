@@ -15,7 +15,7 @@ from app.database.connection import async_engine
 from app.exceptions import AppException
 from app.models import (  # noqa: F811 — registers models with Base
     User, AuditLog, Patient, Case, CaseFile, CaseNote, ToothInstruction,
-    SegmentationResult, Correction,
+    SegmentationResult, Correction, TreatmentPlan, TreatmentStep, ToothTransform,
 )
 
 settings = get_settings()

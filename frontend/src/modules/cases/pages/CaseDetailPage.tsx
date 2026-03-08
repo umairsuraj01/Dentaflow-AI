@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, MessageSquare, Eye, Cuboid, ClipboardList, Send, Brain } from 'lucide-react';
+import { FileText, MessageSquare, Eye, Cuboid, ClipboardList, Send, Brain, Move3d } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
@@ -23,6 +23,7 @@ const TABS = [
   { id: 'instructions', label: 'Instructions', icon: ClipboardList },
   { id: 'viewer', label: '3D Viewer', icon: Cuboid },
   { id: 'ai', label: 'AI Segmentation', icon: Brain },
+  { id: 'treatment', label: 'Treatment', icon: Move3d },
   { id: 'notes', label: 'Notes', icon: MessageSquare },
 ] as const;
 
@@ -211,6 +212,26 @@ export function CaseDetailPage() {
               >
                 <Brain className="h-4 w-4" />
                 Open AI Segmentation View
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Treatment Tab */}
+        {activeTab === 'treatment' && (
+          <Card>
+            <CardHeader><CardTitle>Treatment Planning</CardTitle></CardHeader>
+            <CardContent className="text-center py-8">
+              <Move3d className="mx-auto mb-3 h-12 w-12 text-emerald-400" />
+              <p className="mb-4 text-sm text-gray-500">
+                Plan tooth movements with step-by-step animation preview.
+              </p>
+              <Link
+                to={`/cases/${caseData.id}/treatment`}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                <Move3d className="h-4 w-4" />
+                Open Treatment Planner
               </Link>
             </CardContent>
           </Card>

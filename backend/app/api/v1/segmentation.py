@@ -1,10 +1,10 @@
 # segmentation.py — AI segmentation API endpoints.
 
-from uuid import UUID
+from uuid import UUID, uuid4
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Query
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -250,4 +250,119 @@ async def get_ai_stats(
         success=True,
         message="AI stats retrieved",
         data=stats,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tooth mesh extraction — split segmented arch into individual tooth STLs
+# ---------------------------------------------------------------------------
+
+_TEETH_CACHE_DIR = Path("/tmp/dentaflow-teeth")
+
+
+class ExtractTeethRequest(BaseModel):
+    file_path: str
+
+
+@router.post("/extract-teeth", response_model=ApiResponse[dict])
+async def extract_teeth(
+    data: ExtractTeethRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[dict]:
+    """Run segmentation and extract individual tooth meshes.
+
+    Returns download URLs for each tooth and the gum mesh, plus
+    centroid / bounding-box metadata for 3D viewer positioning.
+    """
+    try:
+        from ai.pipeline.pipeline_manager import run_full_pipeline
+        from ai.utils.fdi_numbering import class_to_fdi
+        from ai.utils.tooth_extractor import extract_tooth_meshes
+        from ai.data.mesh_loader import load_mesh
+
+        # 1. Run segmentation pipeline (reuse existing logic)
+        output = run_full_pipeline(
+            file_path=data.file_path,
+            instructions={},
+            generate_face_data=True,
+        )
+
+        if output.face_labels is None:
+            return ApiResponse(
+                success=False,
+                message="Segmentation produced no face labels",
+                data={},
+            )
+
+        # 2. Load the original mesh and extract tooth sub-meshes
+        mesh = load_mesh(data.file_path)
+        tooth_data = extract_tooth_meshes(mesh, output.face_labels)
+
+        if not tooth_data:
+            return ApiResponse(
+                success=False,
+                message="No tooth meshes could be extracted",
+                data={},
+            )
+
+        # 3. Persist extracted STLs to a temp cache directory
+        extraction_id = str(uuid4())
+        cache_dir = _TEETH_CACHE_DIR / extraction_id
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        teeth_response: dict[str, dict] = {}
+        gum_mesh_url: str | None = None
+
+        for fdi, td in tooth_data.items():
+            filename = f"{fdi}.stl"
+            (cache_dir / filename).write_bytes(td.stl_bytes)
+
+            mesh_url = f"/api/v1/ai/tooth-mesh/{extraction_id}/{fdi}"
+
+            if fdi == 0:
+                gum_mesh_url = mesh_url
+            else:
+                teeth_response[str(fdi)] = {
+                    "mesh_url": mesh_url,
+                    "centroid": td.centroid,
+                    "bbox_min": td.bbox_min,
+                    "bbox_max": td.bbox_max,
+                }
+
+        return ApiResponse(
+            success=True,
+            message=f"Extracted {len(teeth_response)} teeth",
+            data={
+                "extraction_id": extraction_id,
+                "teeth": teeth_response,
+                "gum_mesh_url": gum_mesh_url,
+            },
+        )
+    except Exception as exc:
+        import traceback
+        return ApiResponse(
+            success=False,
+            message=f"Tooth extraction failed: {exc}",
+            data={"traceback": traceback.format_exc()},
+        )
+
+
+@router.get("/tooth-mesh/{extraction_id}/{fdi}")
+async def get_tooth_mesh(
+    extraction_id: str,
+    fdi: int,
+    user: User = Depends(get_current_user),
+) -> Response:
+    """Serve an individual extracted tooth (or gum) mesh STL file."""
+    stl_path = _TEETH_CACHE_DIR / extraction_id / f"{fdi}.stl"
+    if not stl_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tooth mesh not found: extraction={extraction_id}, fdi={fdi}",
+        )
+    return FileResponse(
+        str(stl_path),
+        media_type="model/stl",
+        filename=f"tooth_{fdi}.stl",
     )

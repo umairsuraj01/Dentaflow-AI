@@ -9,6 +9,7 @@ from app.api.v1.tooth_instructions import router as tooth_instructions_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.websocket import router as ws_router
 from app.api.v1.segmentation import router as segmentation_router
+from app.api.v1.treatment_plans import router as treatment_plans_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
@@ -18,3 +19,4 @@ api_router.include_router(tooth_instructions_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(ws_router)
 api_router.include_router(segmentation_router)
+api_router.include_router(treatment_plans_router)
