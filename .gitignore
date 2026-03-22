@@ -29,6 +29,7 @@ dist/
 *.pth
 *.pt
 *.onnx
+backend/ai/checkpoints/*.zip
 
 # Sample/test STL files
 frontend/public/samples/
