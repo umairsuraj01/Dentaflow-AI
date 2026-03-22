@@ -18,14 +18,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="mb-1.5 block text-sm font-medium text-dark-text"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
           >
             {label}
           </label>
         )}
         <div className="relative">
           {icon && (
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
               {icon}
             </div>
           )}
@@ -33,10 +33,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-dark-text placeholder:text-gray-400 transition-colors duration-200 focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20 disabled:cursor-not-allowed disabled:opacity-50',
-              icon && 'pl-10',
-              rightIcon && 'pr-10',
-              error && 'border-red-500 focus:border-red-500 focus:ring-red-500/20',
+              'flex h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-dark-text placeholder:text-slate-400 transition-all duration-200 focus:border-electric focus:outline-none focus:ring-4 focus:ring-electric/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60',
+              icon && 'pl-11',
+              rightIcon && 'pr-11',
+              error && 'border-red-400 focus:border-red-500 focus:ring-red-500/10',
               className,
             )}
             aria-invalid={!!error}
@@ -44,7 +44,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
               {rightIcon}
             </div>
           )}
@@ -52,7 +52,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {error && (
           <p
             id={`${inputId}-error`}
-            className="mt-1 text-xs text-red-500"
+            className="mt-1.5 text-xs font-medium text-red-500"
             role="alert"
           >
             {error}

@@ -1,5 +1,5 @@
+// REACT NATIVE READY: No DOM dependencies. Copy this file to RN project unchanged.
 // useCases.ts — Hook for case list queries and mutations.
-// REACT NATIVE READY: no DOM dependencies.
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { caseService } from '../services/case.service';

@@ -17,8 +17,15 @@ from app.schemas.treatment import (
     TreatmentStepCreate,
     TreatmentStepResponse,
     ToothTransformBatchUpdate,
+    AutoStageRequest,
+    AutoStageResponse,
 )
 from app.services.treatment_plan_service import TreatmentPlanService
+from app.services.auto_staging import (
+    compute_stages,
+    ToothTarget,
+    ToothConstraint,
+)
 
 router = APIRouter(prefix="/treatment-plans", tags=["Treatment Plans"])
 
@@ -175,4 +182,126 @@ async def delete_step(
     return ApiResponse(
         success=True,
         message="Treatment step deleted",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Auto-Staging
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/auto-stage",
+    response_model=ApiResponse[AutoStageResponse],
+)
+async def auto_stage(
+    data: AutoStageRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[AutoStageResponse]:
+    """Auto-compute treatment stages from target transforms.
+
+    The doctor sets the final target for each tooth. This endpoint computes
+    how many stages are needed (based on 0.25mm/stage, 2°/stage limits),
+    respects tooth instructions (DO_NOT_MOVE, LIMIT_MOVEMENT, etc.),
+    and creates all intermediate steps in the plan.
+    """
+    service = TreatmentPlanService(db)
+    plan = await service.get_plan(UUID(data.plan_id))
+
+    # Build targets
+    targets = [
+        ToothTarget(
+            fdi_number=t.fdi_number,
+            pos_x=t.pos_x, pos_y=t.pos_y, pos_z=t.pos_z,
+            rot_x=t.rot_x, rot_y=t.rot_y, rot_z=t.rot_z,
+        )
+        for t in data.targets
+    ]
+
+    # Fetch tooth instructions for this case to build constraints
+    from app.repositories.tooth_instruction_repository import ToothInstructionRepository
+    ti_repo = ToothInstructionRepository(db)
+    instructions = await ti_repo.list_by_case(plan.case_id)
+
+    constraints = []
+    for inst in instructions:
+        c = ToothConstraint(fdi_number=inst.fdi_tooth_number)
+        if inst.instruction_type == "CROWN_DO_NOT_MOVE":
+            c.do_not_move = True
+        elif inst.instruction_type == "IMPLANT":
+            c.do_not_move = True
+        elif inst.instruction_type == "BRIDGE_ANCHOR":
+            c.do_not_move = True
+        elif inst.instruction_type == "ANKYLOSIS_SUSPECTED":
+            c.do_not_move = True
+        elif inst.instruction_type == "LIMIT_MOVEMENT_MM":
+            c.max_movement_mm = inst.numeric_value or 2.0
+        elif inst.instruction_type == "AVOID_TIPPING":
+            c.avoid_tipping = True
+        elif inst.instruction_type == "AVOID_ROTATION":
+            c.avoid_rotation = True
+        elif inst.instruction_type == "SENSITIVE_ROOT":
+            c.sensitive_root = True
+        constraints.append(c)
+
+    # Compute stages
+    result = compute_stages(
+        targets=targets,
+        constraints=constraints,
+        custom_max_translation=data.max_translation_per_stage,
+        custom_max_rotation=data.max_rotation_per_stage,
+    )
+
+    # Delete existing steps (except step 0 if it exists)
+    for step in plan.steps:
+        if step.step_number > 0:
+            await service.delete_step(plan.id, step.step_number)
+
+    # Ensure step 0 exists (initial position)
+    from app.schemas.treatment import TreatmentStepCreate, ToothTransformCreate
+    step0 = next((s for s in plan.steps if s.step_number == 0), None)
+    if not step0:
+        await service.add_step(
+            plan.id,
+            TreatmentStepCreate(
+                step_number=0,
+                label="Initial",
+                transforms=[
+                    ToothTransformCreate(fdi_number=t.fdi_number)
+                    for t in data.targets
+                ],
+            ),
+        )
+
+    # Create computed stages
+    for stage_idx in range(1, result.total_stages + 1):
+        stage_data = result.stages[stage_idx]
+        await service.add_step(
+            plan.id,
+            TreatmentStepCreate(
+                step_number=stage_idx,
+                label=f"Stage {stage_idx}",
+                transforms=[
+                    ToothTransformCreate(
+                        fdi_number=st.fdi_number,
+                        pos_x=round(st.pos_x, 4),
+                        pos_y=round(st.pos_y, 4),
+                        pos_z=round(st.pos_z, 4),
+                        rot_x=round(st.rot_x, 4),
+                        rot_y=round(st.rot_y, 4),
+                        rot_z=round(st.rot_z, 4),
+                    )
+                    for st in stage_data
+                ],
+            ),
+        )
+
+    return ApiResponse(
+        success=True,
+        message=f"Auto-staged {result.total_stages} stages for {len(targets)} teeth",
+        data=AutoStageResponse(
+            total_stages=result.total_stages,
+            warnings=result.warnings,
+            per_tooth_stages=result.per_tooth_stages,
+        ),
     )

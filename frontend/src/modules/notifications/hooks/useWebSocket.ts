@@ -1,5 +1,5 @@
+// REACT NATIVE: Has DOM dependencies (window.location, WebSocket constructor). Needs RN adapter.
 // useWebSocket.ts — Hook for real-time WebSocket updates with auto-reconnect.
-// REACT NATIVE READY: no DOM dependencies.
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 

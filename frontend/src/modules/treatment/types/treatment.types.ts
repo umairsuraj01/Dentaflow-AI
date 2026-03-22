@@ -54,6 +54,17 @@ export interface TreatmentPlanCreate {
   extraction_id?: string;
 }
 
+export interface SegmentationResult {
+  teeth_found: number[];
+  total_faces: number;
+  jaw: string;
+  face_labels: number[];       // per-face FDI numbers
+  fdi_color_map: Record<string, [number, number, number]>;
+  fdi_name_map: Record<string, string>;
+  confidence_scores: Record<string, number>;
+  processing_time: number;
+}
+
 export interface StepTransformUpdate {
   fdi_number: number;
   pos_x: number;

@@ -10,6 +10,10 @@ from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.websocket import router as ws_router
 from app.api.v1.segmentation import router as segmentation_router
 from app.api.v1.treatment_plans import router as treatment_plans_router
+from app.api.v1.analysis import router as analysis_router
+from app.api.v1.billing import router as billing_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.admin import router as admin_api_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
@@ -20,3 +24,7 @@ api_router.include_router(dashboard_router)
 api_router.include_router(ws_router)
 api_router.include_router(segmentation_router)
 api_router.include_router(treatment_plans_router)
+api_router.include_router(analysis_router)
+api_router.include_router(billing_router)
+api_router.include_router(notifications_router)
+api_router.include_router(admin_api_router)

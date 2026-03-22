@@ -1,7 +1,7 @@
 // ToothInstructionPanel.tsx — SVG dental chart with clickable teeth and instruction management.
 
 import { useState, useCallback } from 'react';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { TOOTH_INSTRUCTION_META } from '@/constants';
 import type { ToothInstructionType } from '@/constants';
 import { cn } from '@/lib/utils';

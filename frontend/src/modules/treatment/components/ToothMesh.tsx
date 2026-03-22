@@ -1,14 +1,19 @@
-// ToothMesh.tsx — Individual tooth R3F mesh with transform and selection.
+// ToothMesh.tsx — Individual tooth R3F mesh with realistic dental appearance.
 
 import { useRef, useMemo } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import { getFdiColor } from '@/modules/viewer/utils/fdi';
+
+// Natural tooth color palette
+const TOOTH_BASE = new THREE.Color(0.93, 0.91, 0.87); // ivory white
+const TOOTH_SELECTED = new THREE.Color(0.20, 0.55, 1.0); // vivid blue highlight
+const TOOTH_DIMMED = new THREE.Color(0.78, 0.76, 0.73); // muted ivory
 
 interface ToothMeshProps {
   fdi: number;
   geometry: THREE.BufferGeometry;
   centroid: [number, number, number];
+  archCenter: [number, number, number];
   position: THREE.Vector3;
   rotation: THREE.Euler;
   selected: boolean;
@@ -16,12 +21,15 @@ interface ToothMeshProps {
   onClick: (fdi: number) => void;
   wireframe?: boolean;
   opacity?: number;
+  /** Override color for heatmap/highlight visualization (hex string like "#ef4444") */
+  highlightColor?: string;
 }
 
 export function ToothMesh({
   fdi,
   geometry,
-  centroid,
+  centroid: _centroid,
+  archCenter: _archCenter,
   position,
   rotation,
   selected,
@@ -29,38 +37,29 @@ export function ToothMesh({
   onClick,
   wireframe = false,
   opacity = 1,
+  highlightColor,
 }: ToothMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const color = useMemo(() => {
-    const [r, g, b] = getFdiColor(fdi);
-    if (selected) {
-      return new THREE.Color(
-        Math.min(255, r + 50) / 255,
-        Math.min(255, g + 50) / 255,
-        Math.min(255, b + 50) / 255,
-      );
-    }
-    if (dimmed) {
-      return new THREE.Color(
-        (r * 0.4 + 80) / 255,
-        (g * 0.4 + 80) / 255,
-        (b * 0.4 + 80) / 255,
-      );
-    }
-    return new THREE.Color(r / 255, g / 255, b / 255);
-  }, [fdi, selected, dimmed]);
+    if (selected) return TOOTH_SELECTED.clone();
+    if (highlightColor) return new THREE.Color(highlightColor);
+    if (dimmed) return TOOTH_DIMMED.clone();
+    const hsl = { h: 0, s: 0, l: 0 };
+    TOOTH_BASE.getHSL(hsl);
+    const shift = ((fdi % 10) - 4) * 0.003;
+    return new THREE.Color().setHSL(hsl.h + shift, hsl.s, hsl.l);
+  }, [fdi, selected, dimmed, highlightColor]);
 
   const emissiveColor = useMemo(() => {
-    if (selected) return new THREE.Color(0.15, 0.15, 0.3);
+    if (selected) return new THREE.Color(0.15, 0.25, 0.5);
     return new THREE.Color(0, 0, 0);
   }, [selected]);
 
-  // World position = centroid + animated offset
   const worldPos: [number, number, number] = [
-    centroid[0] + position.x,
-    centroid[1] + position.y,
-    centroid[2] + position.z,
+    position.x,
+    position.y,
+    position.z,
   ];
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
@@ -69,26 +68,29 @@ export function ToothMesh({
   };
 
   return (
-    <mesh
-      ref={meshRef}
-      geometry={geometry}
-      position={worldPos}
-      rotation={rotation}
-      castShadow
-      receiveShadow
-      onClick={handleClick}
-    >
-      <meshStandardMaterial
-        color={color}
-        emissive={emissiveColor}
-        metalness={0.15}
-        roughness={0.4}
-        wireframe={wireframe}
-        side={THREE.DoubleSide}
-        transparent={opacity < 1}
-        opacity={opacity}
-        envMapIntensity={0.8}
-      />
-    </mesh>
+    <group position={worldPos} rotation={rotation}>
+      <mesh
+        ref={meshRef}
+        geometry={geometry}
+        castShadow
+        receiveShadow
+        onClick={handleClick}
+        renderOrder={1}
+      >
+        <meshPhysicalMaterial
+          color={color}
+          emissive={emissiveColor}
+          metalness={0.05}
+          roughness={0.35}
+          clearcoat={0.3}
+          clearcoatRoughness={0.2}
+          wireframe={wireframe}
+          side={THREE.DoubleSide}
+          transparent={opacity < 1}
+          opacity={opacity}
+          envMapIntensity={1.0}
+        />
+      </mesh>
+    </group>
   );
 }

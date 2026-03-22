@@ -125,3 +125,40 @@ class TreatmentPlanListResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Auto-Staging
+# ---------------------------------------------------------------------------
+
+class ToothTargetInput(BaseModel):
+    """Final target transform for one tooth."""
+
+    fdi_number: int = Field(..., ge=11, le=48)
+    pos_x: float = 0.0  # mm
+    pos_y: float = 0.0
+    pos_z: float = 0.0
+    rot_x: float = 0.0  # degrees
+    rot_y: float = 0.0
+    rot_z: float = 0.0
+
+
+class AutoStageRequest(BaseModel):
+    """Request to auto-compute staging from targets."""
+
+    plan_id: str
+    targets: list[ToothTargetInput]
+    max_translation_per_stage: float | None = Field(
+        None, description="Override max mm/stage (default 0.25)"
+    )
+    max_rotation_per_stage: float | None = Field(
+        None, description="Override max deg/stage (default 2.0)"
+    )
+
+
+class AutoStageResponse(BaseModel):
+    """Result of auto-staging."""
+
+    total_stages: int
+    warnings: list[str]
+    per_tooth_stages: dict[int, int]  # fdi → how many stages that tooth needs

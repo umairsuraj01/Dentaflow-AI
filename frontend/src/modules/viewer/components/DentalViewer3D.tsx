@@ -7,10 +7,13 @@ import { STLLoader } from 'three-stdlib';
 import * as THREE from 'three';
 import {
   RotateCcw, Box, Camera, Maximize2, Palette,
-  Layers, Minus, Plus, Brain,
+  Layers, Minus, Plus, Brain, Tag, LayoutGrid,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFdiColor, getToothName } from '../utils/fdi';
+import { applyConfidenceHeatMap, applyLabelClassColors, type ColorMode } from '../utils/heatmap';
+import { FdiLabels3D } from './FdiLabels3D';
+import { ObjectListPanel } from './ObjectListPanel';
 
 /* ─── Error Boundary for 3D scene ──────────────────────────────────── */
 
@@ -99,6 +102,7 @@ function applySegmentationColors(
   geometry: THREE.BufferGeometry,
   faceLabels: number[],
   selectedTooth: number | null,
+  hiddenObjects?: Set<number>,
 ): THREE.BufferGeometry {
   const posAttr = geometry.attributes.position;
   const numVertices = posAttr.count;
@@ -108,6 +112,18 @@ function applySegmentationColors(
 
   for (let faceIdx = 0; faceIdx < numFaces; faceIdx++) {
     const fdi = faceLabels[faceIdx] ?? 0;
+
+    // Hidden objects → transparent (very dark)
+    if (hiddenObjects && hiddenObjects.has(fdi)) {
+      for (let v = 0; v < 3; v++) {
+        const idx = (faceIdx * 3 + v) * 3;
+        colors[idx] = 0.05;
+        colors[idx + 1] = 0.05;
+        colors[idx + 2] = 0.08;
+      }
+      continue;
+    }
+
     let [r, g, b] = getFdiColor(fdi);
 
     // Dim non-selected teeth when one is selected
@@ -158,7 +174,7 @@ function DentalScene({
   opacity, showGrid, fitKey, viewDirection,
   onViewConsumed, onReady,
   segmentation, selectedTooth, onToothSelect,
-  showSegmentation,
+  showSegmentation, showFdiLabels, colorMode, hiddenObjects,
 }: {
   upperUrl?: string; lowerUrl?: string;
   jawView: JawView; jawGap: number;
@@ -173,6 +189,9 @@ function DentalScene({
   selectedTooth?: number | null;
   onToothSelect?: (fdi: number | null, faceIndex: number) => void;
   showSegmentation: boolean;
+  showFdiLabels: boolean;
+  colorMode: ColorMode;
+  hiddenObjects: Set<number>;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -201,12 +220,17 @@ function DentalScene({
     return { upperGeo: uGeo, lowerGeo: lGeo };
   }, [upperRaw, lowerRaw]);
 
-  // Apply segmentation colors
+  // Apply segmentation colors (supports multiple color modes)
   const coloredUpperGeo = useMemo(() => {
     if (!upperGeo || !segmentation || !showSegmentation) return null;
     const geo = upperGeo.clone();
-    return applySegmentationColors(geo, segmentation.faceLabels, selectedTooth ?? null);
-  }, [upperGeo, segmentation, showSegmentation, selectedTooth]);
+    if (colorMode === 'confidence') {
+      return applyConfidenceHeatMap(geo, segmentation);
+    } else if (colorMode === 'label-class') {
+      return applyLabelClassColors(geo, segmentation.faceLabels);
+    }
+    return applySegmentationColors(geo, segmentation.faceLabels, selectedTooth ?? null, hiddenObjects);
+  }, [upperGeo, segmentation, showSegmentation, selectedTooth, colorMode, hiddenObjects]);
 
   // Stats
   useEffect(() => {
@@ -324,6 +348,17 @@ function DentalScene({
         </mesh>
       )}
 
+      {/* FDI Labels floating on teeth */}
+      {showFdiLabels && showSegmentation && segmentation && upperGeo && showUpper && (
+        <FdiLabels3D
+          geometry={upperGeo}
+          segmentation={segmentation}
+          hiddenObjects={hiddenObjects}
+          selectedTooth={selectedTooth ?? null}
+          yOffset={upperY}
+        />
+      )}
+
       {showGrid && (
         <gridHelper args={[200, 40, '#334155', '#1e293b']} position={[0, -45, 0]} />
       )}
@@ -389,12 +424,16 @@ function LayersPanel({
   wireframe, onWireframeToggle,
   opacity, onOpacityChange,
   showSegmentation, onSegmentationToggle,
+  showFdiLabels, onFdiLabelsToggle,
+  colorMode, onColorModeChange,
   hasSegmentation,
 }: {
   showGrid: boolean; onGridToggle: () => void;
   wireframe: boolean; onWireframeToggle: () => void;
   opacity: number; onOpacityChange: (v: number) => void;
   showSegmentation: boolean; onSegmentationToggle: () => void;
+  showFdiLabels: boolean; onFdiLabelsToggle: () => void;
+  colorMode: ColorMode; onColorModeChange: (mode: ColorMode) => void;
   hasSegmentation: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -412,13 +451,42 @@ function LayersPanel({
         Layers
       </button>
       {open && (
-        <div className="mt-1 w-52 rounded-lg bg-black/70 p-3 shadow-xl ring-1 ring-white/10 backdrop-blur">
+        <div className="mt-1 w-56 rounded-lg bg-black/70 p-3 shadow-xl ring-1 ring-white/10 backdrop-blur">
           {hasSegmentation && (
-            <label className="flex cursor-pointer items-center gap-2 py-1 text-xs text-white/80">
-              <input type="checkbox" checked={showSegmentation} onChange={onSegmentationToggle} className="accent-blue-500" />
-              <Brain className="h-3.5 w-3.5 text-blue-400" />
-              AI Segmentation
-            </label>
+            <>
+              <label className="flex cursor-pointer items-center gap-2 py-1 text-xs text-white/80">
+                <input type="checkbox" checked={showSegmentation} onChange={onSegmentationToggle} className="accent-blue-500" />
+                <Brain className="h-3.5 w-3.5 text-blue-400" />
+                AI Segmentation
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 py-1 text-xs text-white/80">
+                <input type="checkbox" checked={showFdiLabels} onChange={onFdiLabelsToggle} className="accent-blue-500" />
+                <Tag className="h-3.5 w-3.5 text-blue-400" />
+                FDI Labels
+              </label>
+              {/* Color Mode */}
+              <div className="mt-1.5 border-t border-white/10 pt-1.5">
+                <p className="text-[10px] text-white/40 mb-1">Color Mode</p>
+                <div className="flex flex-col gap-0.5">
+                  {([
+                    { id: 'fdi' as const, label: 'Tooth Colors' },
+                    { id: 'confidence' as const, label: 'Confidence Heat Map' },
+                    { id: 'label-class' as const, label: 'Label Classes' },
+                  ]).map((mode) => (
+                    <label key={mode.id} className="flex cursor-pointer items-center gap-2 py-0.5 text-[11px] text-white/70">
+                      <input
+                        type="radio"
+                        name="colorMode"
+                        checked={colorMode === mode.id}
+                        onChange={() => onColorModeChange(mode.id)}
+                        className="accent-blue-500"
+                      />
+                      {mode.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
           <label className="flex cursor-pointer items-center gap-2 py-1 text-xs text-white/80">
             <input type="checkbox" checked={showGrid} onChange={onGridToggle} className="accent-electric" />
@@ -565,6 +633,10 @@ export function DentalViewer3D({
   const [stats, setStats] = useState({ triangles: 0, vertices: 0 });
   const [showColors, setShowColors] = useState(false);
   const [showSegmentation, setShowSegmentation] = useState(!!segmentation);
+  const [showFdiLabels, setShowFdiLabels] = useState(false);
+  const [showObjectList, setShowObjectList] = useState(false);
+  const [colorMode, setColorMode] = useState<ColorMode>('fdi');
+  const [hiddenObjects, setHiddenObjects] = useState<Set<number>>(new Set());
   const [internalSelectedTooth, setInternalSelectedTooth] = useState<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -595,6 +667,20 @@ export function DentalViewer3D({
     setInternalSelectedTooth(fdi);
     onToothSelect?.(fdi, faceIndex);
   }, [onToothSelect]);
+
+  const handleToggleVisibility = useCallback((fdi: number) => {
+    setHiddenObjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(fdi)) next.delete(fdi); else next.add(fdi);
+      return next;
+    });
+  }, []);
+
+  const handleShowAll = useCallback(() => setHiddenObjects(new Set()), []);
+  const handleHideAll = useCallback(() => {
+    if (!segmentation) return;
+    setHiddenObjects(new Set([0, ...segmentation.teethFound]));
+  }, [segmentation]);
 
   if (!upperUrl && !lowerUrl) {
     return (
@@ -641,6 +727,9 @@ export function DentalViewer3D({
             selectedTooth={selectedTooth}
             onToothSelect={handleToothSelect}
             showSegmentation={showSegmentation}
+            showFdiLabels={showFdiLabels}
+            colorMode={colorMode}
+            hiddenObjects={hiddenObjects}
           />
         </Suspense>
       </Canvas>
@@ -656,14 +745,41 @@ export function DentalViewer3D({
         onOpacityChange={setOpacity}
         showSegmentation={showSegmentation}
         onSegmentationToggle={() => setShowSegmentation(!showSegmentation)}
+        showFdiLabels={showFdiLabels}
+        onFdiLabelsToggle={() => setShowFdiLabels(!showFdiLabels)}
+        colorMode={colorMode}
+        onColorModeChange={setColorMode}
         hasSegmentation={!!segmentation}
       />
+
+      {/* Object List Panel (top-right below toolbar) */}
+      {showObjectList && segmentation && (
+        <div className="absolute right-14 top-3 w-56 z-10">
+          <ObjectListPanel
+            segmentation={segmentation}
+            hiddenObjects={hiddenObjects}
+            selectedTooth={selectedTooth ?? null}
+            onToggleVisibility={handleToggleVisibility}
+            onSelectTooth={(fdi) => handleToothSelect(fdi, -1)}
+            onShowAll={handleShowAll}
+            onHideAll={handleHideAll}
+          />
+        </div>
+      )}
 
       {/* Right Toolbar */}
       <div className="absolute right-3 top-3 flex flex-col gap-1.5">
         <ToolBtn icon={RotateCcw} label="Auto Rotate" active={autoRotate} onClick={() => setAutoRotate(!autoRotate)} />
         <ToolBtn icon={Camera} label="Screenshot" onClick={handleScreenshot} />
         <ToolBtn icon={Maximize2} label="Fit to View" onClick={() => setFitKey((k) => k + 1)} />
+        {segmentation && (
+          <ToolBtn
+            icon={LayoutGrid}
+            label="Object List"
+            active={showObjectList}
+            onClick={() => setShowObjectList(!showObjectList)}
+          />
+        )}
         <div className="relative">
           <ToolBtn icon={Palette} label="Color Theme" active={showColors} onClick={() => setShowColors(!showColors)} />
           {showColors && (

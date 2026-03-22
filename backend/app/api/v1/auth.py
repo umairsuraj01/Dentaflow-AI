@@ -9,11 +9,13 @@ from app.database.connection import get_db
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
+    UpdateProfileRequest,
     UserResponse,
     VerifyEmailRequest,
 )
@@ -104,6 +106,36 @@ async def get_me(
     )
 
 
+@router.put("/me", response_model=ApiResponse[UserResponse])
+async def update_profile(
+    data: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[UserResponse]:
+    """Update current user profile."""
+    service = AuthService(db)
+    updated = await service.update_profile(current_user, data)
+    return ApiResponse(
+        success=True,
+        message="Profile updated",
+        data=UserResponse.model_validate(updated),
+    )
+
+
+@router.put("/me/password", response_model=ApiResponse[None])
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[None]:
+    """Change current user's password."""
+    service = AuthService(db)
+    await service.change_password(
+        current_user, data.current_password, data.new_password
+    )
+    return ApiResponse(success=True, message="Password changed successfully")
+
+
 @router.post("/forgot-password", response_model=ApiResponse[None])
 async def forgot_password(
     data: ForgotPasswordRequest,
@@ -158,7 +190,7 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         secure=True,
         samesite="lax",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        path="/api/v1/auth",
+        path="/",
     )
 
 

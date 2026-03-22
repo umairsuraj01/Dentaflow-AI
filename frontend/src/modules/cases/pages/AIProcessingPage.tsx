@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Brain, BarChart3, Wrench, Loader2, Play, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Brain, BarChart3, Wrench, Loader2, Play, RefreshCw, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/modules/auth';
 import { useCaseDetail } from '../hooks/useCaseDetail';
 import { DentalViewer3D, type SegmentationData } from '@/modules/viewer/components/DentalViewer3D';
+import { MeshQualityCard } from '../components/MeshQualityCard';
+import { segmentationService, type MeshRepairResponse } from '@/modules/viewer/services/segmentation.service';
 import api from '@/lib/api';
 import { FDI_UPPER, FDI_LOWER, AI_CONFIDENCE } from '@/constants/app';
 import { getFdiColorHex, getToothName } from '@/modules/viewer/utils/fdi';
@@ -22,8 +24,9 @@ const DEV_FILES = [
   { label: 'Dr Hamid Lower', path: "/Users/umairsuraj/Downloads/02022026-dr hamid's Case-lowerjaw.stl" },
 ];
 
-type SideTab = 'results' | 'corrections';
+type SideTab = 'quality' | 'results' | 'corrections';
 const ALL_SIDE_TABS: { id: SideTab; label: string; icon: typeof BarChart3; techOnly?: boolean }[] = [
+  { id: 'quality', label: 'Quality', icon: Shield },
   { id: 'results', label: 'Results', icon: BarChart3 },
   { id: 'corrections', label: 'Corrections', icon: Wrench, techOnly: true },
 ];
@@ -47,15 +50,18 @@ export function AIProcessingPage() {
   const { user } = useAuthStore();
   const { caseData, isLoading } = useCaseDetail(caseId);
 
-  const [sideTab, setSideTab] = useState<SideTab>('results');
+  const [sideTab, setSideTab] = useState<SideTab>('quality');
   const [selectedFile, setSelectedFile] = useState(DEV_FILES[0].path);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
+  const [repairResult, setRepairResult] = useState<MeshRepairResponse | null>(null);
   const [aiResult, setAiResult] = useState<AIResult | null>(null);
   const [segData, setSegData] = useState<SegmentationData | undefined>();
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [fileLoading, setFileLoading] = useState(false);
+  const [repairedFilePath, setRepairedFilePath] = useState<string | null>(null);
 
   const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'SUPER_ADMIN';
 
@@ -84,6 +90,36 @@ export function AIProcessingPage() {
     return () => { cancelled = true; };
   }, [selectedFile]);
 
+  // Reset repair state when file changes
+  useEffect(() => {
+    setRepairResult(null);
+    setRepairedFilePath(null);
+  }, [selectedFile]);
+
+  const handleRepairMesh = useCallback(async () => {
+    setIsRepairing(true);
+    setError(null);
+    try {
+      const result = await segmentationService.repairMesh({
+        file_path: selectedFile,
+      });
+      setRepairResult(result);
+      setRepairedFilePath(result.repaired_file_path);
+
+      // Reload the 3D viewer with the repaired mesh
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      const res = await api.get(`/ai/serve-file?path=${encodeURIComponent(result.repaired_file_path)}`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(res.data);
+      setBlobUrl(url);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Mesh repair failed');
+    } finally {
+      setIsRepairing(false);
+    }
+  }, [selectedFile, blobUrl]);
+
   const handleRunAI = useCallback(async () => {
     setIsProcessing(true);
     setError(null);
@@ -91,7 +127,8 @@ export function AIProcessingPage() {
     setSegData(undefined);
     setSelectedTooth(null);
     try {
-      const res = await api.post('/ai/segment', { file_path: selectedFile });
+      const filePath = repairedFilePath || selectedFile;
+      const res = await api.post('/ai/segment', { file_path: filePath });
       if (res.data.success) {
         const data = res.data.data as AIResult;
         setAiResult(data);
@@ -217,6 +254,15 @@ export function AIProcessingPage() {
               </button>
             ))}
           </div>
+
+          {/* Quality tab */}
+          {sideTab === 'quality' && (
+            <MeshQualityCard
+              repairResult={repairResult}
+              isRepairing={isRepairing}
+              onRepair={handleRepairMesh}
+            />
+          )}
 
           {/* Results tab */}
           {sideTab === 'results' && aiResult && (

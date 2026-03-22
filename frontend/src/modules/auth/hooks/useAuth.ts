@@ -1,5 +1,5 @@
+// REACT NATIVE: Has DOM dependencies (localStorage). Needs RN adapter.
 // useAuth.ts — Auth hook for login, logout, and session management.
-// REACT NATIVE READY: no DOM dependencies.
 
 import { useCallback } from 'react';
 import { useAuthStore } from '../store/auth.store';

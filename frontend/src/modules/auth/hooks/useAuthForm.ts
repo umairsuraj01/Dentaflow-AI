@@ -1,5 +1,5 @@
+// REACT NATIVE READY: No DOM dependencies. Copy this file to RN project unchanged.
 // useAuthForm.ts — Form state and validation logic for auth forms.
-// REACT NATIVE READY: no DOM dependencies.
 
 import { useState, useCallback } from 'react';
 import { PASSWORD_RULES } from '../constants/auth.constants';

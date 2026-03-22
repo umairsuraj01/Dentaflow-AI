@@ -67,6 +67,56 @@ async function getAIStats(): Promise<AIStats> {
   return res.data.data!;
 }
 
+// ---------------------------------------------------------------------------
+// Mesh Repair (Phase 1)
+// ---------------------------------------------------------------------------
+
+export interface MeshRepairOptions {
+  file_path: string;
+  fill_holes?: boolean;
+  remove_islands?: boolean;
+  remove_spikes?: boolean;
+  fix_normals?: boolean;
+  smooth?: boolean;
+  smooth_iterations?: number;
+}
+
+export interface MeshQualityReport {
+  score: number;
+  is_watertight: boolean;
+  is_manifold: boolean;
+  vertex_count: number;
+  face_count: number;
+  hole_count: number;
+  components: number;
+  degenerate_faces: number;
+  non_manifold_edges: number;
+  bounding_box: number[];
+  surface_area: number;
+  volume: number | null;
+}
+
+export interface MeshRepairResponse {
+  repaired_file_path: string;
+  repairs_applied: string[];
+  processing_time: number;
+  holes_filled: number;
+  islands_removed: number;
+  spikes_removed: number;
+  normals_fixed: boolean;
+  faces_smoothed: number;
+  quality_before: MeshQualityReport;
+  quality_after: MeshQualityReport;
+}
+
+async function repairMesh(options: MeshRepairOptions): Promise<MeshRepairResponse> {
+  const res = await api.post<ApiResponse<MeshRepairResponse>>(
+    '/ai/repair-mesh',
+    options,
+  );
+  return res.data.data!;
+}
+
 export const segmentationService = {
   getSegmentation,
   triggerSegmentation,
@@ -75,4 +125,5 @@ export const segmentationService = {
   createCorrection,
   listCorrections,
   getAIStats,
+  repairMesh,
 };

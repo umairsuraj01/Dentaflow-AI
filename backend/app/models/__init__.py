@@ -13,6 +13,11 @@ from app.models.correction import Correction
 from app.models.treatment_plan import TreatmentPlan
 from app.models.treatment_step import TreatmentStep
 from app.models.tooth_transform import ToothTransform
+from app.models.pricing_plan import PricingPlan
+from app.models.invoice import Invoice
+from app.models.subscription import Subscription
+from app.models.payment import Payment
+from app.models.notification import Notification
 
 __all__ = [
     "User",
@@ -27,4 +32,9 @@ __all__ = [
     "TreatmentPlan",
     "TreatmentStep",
     "ToothTransform",
+    "PricingPlan",
+    "Invoice",
+    "Subscription",
+    "Payment",
+    "Notification",
 ]

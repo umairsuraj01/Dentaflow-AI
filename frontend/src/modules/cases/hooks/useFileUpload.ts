@@ -1,5 +1,5 @@
+// REACT NATIVE: Has DOM dependencies (File Web API, fetch with File body). Needs RN adapter.
 // useFileUpload.ts — Hook for S3 presigned URL upload flow with progress.
-// REACT NATIVE READY: no DOM dependencies.
 
 import { useState, useCallback } from 'react';
 import { caseService } from '../services/case.service';

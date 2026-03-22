@@ -16,7 +16,7 @@ APP_CASE_PREFIX = "DF"
 APP_INVOICE_PREFIX = "INV"
 
 # -- Auth ----------------------------------------------------------------
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 BCRYPT_ROUNDS = 12
 MAX_LOGIN_ATTEMPTS = 5
@@ -36,7 +36,7 @@ ALLOWED_IMAGE_FORMATS = frozenset({"jpg", "jpeg", "png", "tiff"})
 # -- AI Pipeline ----------------------------------------------------------
 AI_POINT_CLOUD_SIZE = 10_000
 AI_BATCH_SIZE = 4
-AI_NUM_CLASSES = 33
+AI_NUM_CLASSES = 15
 AI_CONFIDENCE_HIGH = 0.90
 AI_CONFIDENCE_MEDIUM = 0.70
 
@@ -166,6 +166,25 @@ class InvoiceStatus(str, Enum):
     PAID = "PAID"
     OVERDUE = "OVERDUE"
     CANCELLED = "CANCELLED"
+    REFUNDED = "REFUNDED"
+
+
+class SubscriptionStatus(str, Enum):
+    """Subscription lifecycle states."""
+
+    ACTIVE = "ACTIVE"
+    PAST_DUE = "PAST_DUE"
+    CANCELLED = "CANCELLED"
+    UNPAID = "UNPAID"
+    TRIALING = "TRIALING"
+
+
+class PaymentStatus(str, Enum):
+    """Payment states."""
+
+    PENDING = "PENDING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
     REFUNDED = "REFUNDED"
 
 

@@ -1,4 +1,4 @@
-// LoginPage.tsx — Split-screen login with animated gradient and form.
+// LoginPage.tsx — Premium split-screen login with animated mesh gradient and glassmorphism.
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -11,9 +11,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useAuthForm } from '../hooks/useAuthForm';
 
 const FEATURES = [
-  { icon: Brain, title: 'AI Segmentation', desc: 'Automatic tooth segmentation powered by deep learning' },
-  { icon: Shield, title: 'Secure Platform', desc: 'Enterprise-grade security for patient data' },
-  { icon: Zap, title: 'Fast Turnaround', desc: 'Get treatment plans in hours, not days' },
+  { icon: Brain, title: 'AI Segmentation', desc: 'Deep learning tooth segmentation in seconds' },
+  { icon: Shield, title: 'Enterprise Security', desc: 'HIPAA-ready encryption & access controls' },
+  { icon: Zap, title: 'Instant Results', desc: 'Treatment plans delivered in hours, not days' },
 ] as const;
 
 export function LoginPage() {
@@ -54,92 +54,142 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left: Gradient panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-navy via-slate-800 to-navy">
-        <div className="absolute inset-0 opacity-10">
-          <svg className="h-full w-full" viewBox="0 0 800 600">
-            {Array.from({ length: 20 }, (_, i) => (
-              <circle
-                key={i}
-                cx={100 + (i % 5) * 150}
-                cy={80 + Math.floor(i / 5) * 140}
-                r={3}
-                fill="#3B82F6"
-                opacity={0.5 + (i % 3) * 0.2}
-              />
-            ))}
-            {Array.from({ length: 15 }, (_, i) => (
-              <line
-                key={`l-${i}`}
-                x1={100 + (i % 5) * 150}
-                y1={80 + Math.floor(i / 5) * 140}
-                x2={100 + ((i + 1) % 5) * 150}
-                y2={80 + Math.floor((i + 1) / 5) * 140}
-                stroke="#3B82F6"
-                strokeWidth={0.5}
-                opacity={0.3}
-              />
-            ))}
-          </svg>
+      {/* Left: Premium mesh gradient panel */}
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden mesh-bg">
+        {/* Animated floating orbs */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            animate={{ y: [-20, 20, -20], x: [-10, 10, -10] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-[15%] left-[20%] h-72 w-72 rounded-full bg-electric/20 blur-[100px]"
+          />
+          <motion.div
+            animate={{ y: [20, -20, 20], x: [10, -10, 10] }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute bottom-[20%] right-[15%] h-64 w-64 rounded-full bg-mint/15 blur-[100px]"
+          />
+          <motion.div
+            animate={{ y: [15, -15, 15] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute top-[60%] left-[50%] h-48 w-48 rounded-full bg-purple-500/10 blur-[80px]"
+          />
         </div>
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="mb-2 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-electric">
-                <Brain className="h-7 w-7 text-white" />
+
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
+
+        <div className="relative z-10 flex flex-col justify-between px-12 xl:px-16 py-12 w-full">
+          {/* Logo */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-electric to-cyan-400 shadow-glow-blue">
+                <Brain className="h-6 w-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-white">{APP_NAME}</span>
+              <span className="text-2xl font-bold text-white tracking-tight">{APP_NAME}</span>
             </div>
-            <p className="mb-12 text-lg text-blue-200">{APP_TAGLINE}</p>
           </motion.div>
-          <div className="space-y-8">
-            {FEATURES.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 + i * 0.15 }}
-                className="flex items-start gap-4"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <f.icon className="h-5 w-5 text-electric" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">{f.title}</h3>
-                  <p className="text-sm text-blue-200/80">{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+
+          {/* Hero text + features */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <h2 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight">
+                The future of<br />
+                <span className="bg-gradient-to-r from-electric via-cyan-400 to-mint bg-clip-text text-transparent">
+                  dental planning
+                </span>
+              </h2>
+              <p className="mt-4 text-lg text-slate-400 max-w-md leading-relaxed">
+                {APP_TAGLINE}
+              </p>
+            </motion.div>
+
+            <div className="mt-10 space-y-4">
+              {FEATURES.map((f, i) => (
+                <motion.div
+                  key={f.title}
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 + i * 0.12 }}
+                  className="flex items-center gap-4 rounded-xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] px-5 py-4 hover:bg-white/[0.1] transition-colors"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-electric/20 to-cyan-400/20">
+                    <f.icon className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">{f.title}</h3>
+                    <p className="text-xs text-slate-400">{f.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
+
+          {/* Trust badge */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="flex items-center gap-3 text-sm text-slate-500"
+          >
+            <div className="flex -space-x-2">
+              {['bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500'].map((color, i) => (
+                <div key={i} className={`h-8 w-8 rounded-full ${color} border-2 border-navy flex items-center justify-center text-[10px] font-bold text-white`}>
+                  {['JD', 'SK', 'MR', 'AL'][i]}
+                </div>
+              ))}
+            </div>
+            <span className="text-slate-400">Trusted by <strong className="text-white">2,500+</strong> dental professionals</span>
+          </motion.div>
         </div>
       </div>
 
       {/* Right: Login form */}
-      <div className="flex w-full items-center justify-center px-6 lg:w-1/2">
+      <div className="flex w-full items-center justify-center px-6 lg:w-[45%] bg-gradient-to-b from-white to-slate-50/80">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className={`w-full max-w-md ${shakeForm ? 'animate-shake' : ''}`}
+          className={`w-full max-w-[420px] ${shakeForm ? 'animate-shake' : ''}`}
         >
           {/* Mobile header */}
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-electric">
-              <Brain className="h-5 w-5 text-white" />
+          <div className="mb-8 lg:hidden">
+            <div className="flex items-center gap-2.5 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-electric to-cyan-400">
+                <Brain className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-dark-text tracking-tight">{APP_NAME}</span>
             </div>
-            <span className="text-xl font-bold text-dark-text">{APP_NAME}</span>
           </div>
 
-          <h1 className="mb-2 text-2xl font-bold text-dark-text">Welcome back</h1>
-          <p className="mb-8 text-sm text-gray-500">Sign in to your account to continue</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-dark-text tracking-tight">Welcome back</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Sign in to your account to continue
+          </p>
 
           {form.errors.general && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600" role="alert">
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-5 flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 p-3.5 text-sm text-red-600"
+              role="alert"
+            >
+              <div className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
               {form.errors.general}
-            </div>
+            </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
             <Input
               label="Email"
               type="email"
@@ -159,7 +209,7 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -171,33 +221,41 @@ export function LoginPage() {
               autoComplete="current-password"
             />
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input type="checkbox" className="rounded border-gray-300" />
+              <label className="flex items-center gap-2.5 text-sm text-slate-600 cursor-pointer">
+                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-electric focus:ring-electric/20" />
                 Remember me
               </label>
-              <Link to={ROUTES.FORGOT_PASSWORD} className="text-sm font-medium text-electric hover:underline">
+              <Link to={ROUTES.FORGOT_PASSWORD} className="text-sm font-medium text-electric hover:text-blue-700 transition-colors">
                 Forgot password?
               </Link>
             </div>
-            <Button type="submit" className="w-full" loading={form.isSubmitting}>
+            <Button type="submit" className="w-full h-11" variant="gradient" loading={form.isSubmitting}>
               Sign In
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <div className="mt-8 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs text-slate-400 font-medium">OR</span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
             Don&apos;t have an account?{' '}
-            <Link to={ROUTES.REGISTER} className="font-medium text-electric hover:underline">
-              Create one
+            <Link to={ROUTES.REGISTER} className="font-semibold text-electric hover:text-blue-700 transition-colors">
+              Create one free
             </Link>
           </p>
 
-          <div className="mt-10 flex items-center justify-center gap-1.5 text-xs text-gray-400">
-            <span>Trusted by 500+ dental practices</span>
+          <div className="mt-10 flex items-center justify-center gap-2 text-xs text-slate-400">
             <div className="flex gap-0.5">
               {Array.from({ length: 5 }, (_, i) => (
-                <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
               ))}
             </div>
+            <span className="font-medium">4.9/5</span>
+            <span className="text-slate-300">|</span>
+            <span>500+ reviews</span>
           </div>
         </motion.div>
       </div>

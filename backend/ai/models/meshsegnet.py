@@ -1,197 +1,228 @@
-# meshsegnet.py — MeshSegNet PyTorch architecture for dental tooth segmentation.
+# meshsegnet.py — MeshSegNet architecture for 3D dental mesh segmentation.
+#
+# Original paper: "MeshSegNet: Deep Multi-Scale Mesh Feature Learning
+# for Automated Labeling of Raw Dental Surface from 3D Intraoral Scanners"
+# Ref: https://github.com/Tai-Hsien/MeshSegNet
+#
+# 15 classes per jaw: 0 = gum, 1-14 = teeth (second molar → second molar)
 
 from __future__ import annotations
-
-import logging
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from app.constants import AI_NUM_CLASSES, AI_POINT_CLOUD_SIZE
-
-logger = logging.getLogger(__name__)
+from torch.autograd import Variable
 
 
 class STN3d(nn.Module):
-    """Spatial Transformer Network for 3D point alignment."""
+    """Spatial Transformer Network for 3D input alignment."""
 
-    def __init__(self) -> None:
+    def __init__(self, channel: int):
         super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Conv1d(3, 64, 1), nn.BatchNorm1d(64), nn.ReLU(),
-            nn.Conv1d(64, 128, 1), nn.BatchNorm1d(128), nn.ReLU(),
-            nn.Conv1d(128, 1024, 1), nn.BatchNorm1d(1024), nn.ReLU(),
-        )
-        self.fc = nn.Sequential(
-            nn.Linear(1024, 512), nn.BatchNorm1d(512), nn.ReLU(),
-            nn.Linear(512, 256), nn.BatchNorm1d(256), nn.ReLU(),
-            nn.Linear(256, 9),
-        )
-        # Initialize as identity transform
-        self.fc[-1].weight.data.zero_()
-        self.fc[-1].bias.data.copy_(
-            torch.tensor([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=torch.float32)
-        )
+        self.conv1 = nn.Conv1d(channel, 64, 1)
+        self.conv2 = nn.Conv1d(64, 128, 1)
+        self.conv3 = nn.Conv1d(128, 1024, 1)
+        self.fc1 = nn.Linear(1024, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 9)
+        self.bn1 = nn.BatchNorm1d(64)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.bn3 = nn.BatchNorm1d(1024)
+        self.bn4 = nn.BatchNorm1d(512)
+        self.bn5 = nn.BatchNorm1d(256)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Predict 3x3 transformation matrix. Input: (B, 3, N)."""
-        feat = self.mlp(x)
-        feat = feat.max(dim=2)[0]
-        transform = self.fc(feat)
-        return transform.view(-1, 3, 3)
+        batchsize = x.size(0)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = torch.max(x, 2, keepdim=True)[0]
+        x = x.view(-1, 1024)
+        x = F.relu(self.bn4(self.fc1(x)))
+        x = F.relu(self.bn5(self.fc2(x)))
+        x = self.fc3(x)
+        iden = torch.from_numpy(
+            np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=np.float32)
+        ).view(1, 9).repeat(batchsize, 1).to(x.device)
+        x = x + iden
+        return x.view(-1, 3, 3)
 
 
-class LocalFeatureEncoder(nn.Module):
-    """1D Conv encoder producing per-point local features."""
+class STNkd(nn.Module):
+    """Spatial Transformer Network for k-dimensional features."""
 
-    def __init__(self, in_channels: int = 7) -> None:
+    def __init__(self, k: int = 64):
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv1d(in_channels, 64, 1), nn.BatchNorm1d(64), nn.ReLU(),
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv1d(64, 128, 1), nn.BatchNorm1d(128), nn.ReLU(),
-        )
-        self.conv3 = nn.Sequential(
-            nn.Conv1d(128, 128, 1), nn.BatchNorm1d(128), nn.ReLU(),
-        )
-        self.conv4 = nn.Sequential(
-            nn.Conv1d(128, 256, 1), nn.BatchNorm1d(256), nn.ReLU(),
-        )
-        self.conv5 = nn.Sequential(
-            nn.Conv1d(256, 1024, 1), nn.BatchNorm1d(1024), nn.ReLU(),
-        )
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return (local_features_256, deep_features_1024). Input: (B, 7, N)."""
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        local_feat = self.conv4(x)   # (B, 256, N)
-        deep_feat = self.conv5(local_feat)  # (B, 1024, N)
-        return local_feat, deep_feat
-
-
-class SegmentationHead(nn.Module):
-    """MLP segmentation head: 1280 -> num_classes per point."""
-
-    def __init__(self, num_classes: int = AI_NUM_CLASSES) -> None:
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Conv1d(1280, 512, 1), nn.BatchNorm1d(512), nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Conv1d(512, 256, 1), nn.BatchNorm1d(256), nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Conv1d(256, 128, 1), nn.BatchNorm1d(128), nn.ReLU(),
-            nn.Conv1d(128, num_classes, 1),
-        )
+        self.k = k
+        self.conv1 = nn.Conv1d(k, 64, 1)
+        self.conv2 = nn.Conv1d(64, 128, 1)
+        self.conv3 = nn.Conv1d(128, 512, 1)
+        self.fc1 = nn.Linear(512, 256)
+        self.fc2 = nn.Linear(256, 128)
+        self.fc3 = nn.Linear(128, k * k)
+        self.bn1 = nn.BatchNorm1d(64)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.bn3 = nn.BatchNorm1d(512)
+        self.bn4 = nn.BatchNorm1d(256)
+        self.bn5 = nn.BatchNorm1d(128)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Per-point class logits. Input: (B, 1280, N), Output: (B, C, N)."""
-        return self.mlp(x)
+        batchsize = x.size(0)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = torch.max(x, 2, keepdim=True)[0]
+        x = x.view(-1, 512)
+        x = F.relu(self.bn4(self.fc1(x)))
+        x = F.relu(self.bn5(self.fc2(x)))
+        x = self.fc3(x)
+        iden = torch.from_numpy(
+            np.eye(self.k).flatten().astype(np.float32)
+        ).view(1, self.k * self.k).repeat(batchsize, 1).to(x.device)
+        x = x + iden
+        return x.view(-1, self.k, self.k)
 
 
 class MeshSegNet(nn.Module):
-    """MeshSegNet — Point-cloud dental tooth segmentation network.
+    """MeshSegNet for dental mesh segmentation.
 
-    Input: (B, N, 7) — XYZ (3) + normals (3) + curvature (1)
-    Output: (B, N, num_classes) — per-point class probabilities
+    Args:
+        num_classes: Number of output classes (15 = gum + 14 teeth).
+        num_channels: Number of input channels (15 = 9 vertices + 3 barycenters + 3 normals).
     """
 
-    def __init__(self, num_classes: int = AI_NUM_CLASSES) -> None:
+    def __init__(
+        self,
+        num_classes: int = 15,
+        num_channels: int = 15,
+        with_dropout: bool = True,
+        dropout_p: float = 0.5,
+    ):
         super().__init__()
         self.num_classes = num_classes
-        self.stn = STN3d()
-        self.encoder = LocalFeatureEncoder(in_channels=7)
-        self.seg_head = SegmentationHead(num_classes)
+        self.num_channels = num_channels
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass. Input: (B, N, 7), Output: (B, N, num_classes)."""
-        batch_size, n_points, _ = x.shape
-        xyz = x[:, :, :3].transpose(1, 2)    # (B, 3, N)
+        # MLP-1
+        self.mlp1_conv1 = nn.Conv1d(num_channels, 64, 1)
+        self.mlp1_conv2 = nn.Conv1d(64, 64, 1)
+        self.mlp1_bn1 = nn.BatchNorm1d(64)
+        self.mlp1_bn2 = nn.BatchNorm1d(64)
 
-        # Spatial transformer on XYZ
-        transform = self.stn(xyz)             # (B, 3, 3)
-        xyz_aligned = torch.bmm(transform, xyz)  # (B, 3, N)
+        # FTM
+        self.fstn = STNkd(k=64)
 
-        # Replace XYZ with aligned XYZ, keep normals + curvature
-        features = x.transpose(1, 2).clone()  # (B, 7, N)
-        features[:, :3, :] = xyz_aligned
+        # GLM-1
+        self.glm1_conv1_1 = nn.Conv1d(64, 32, 1)
+        self.glm1_conv1_2 = nn.Conv1d(64, 32, 1)
+        self.glm1_bn1_1 = nn.BatchNorm1d(32)
+        self.glm1_bn1_2 = nn.BatchNorm1d(32)
+        self.glm1_conv2 = nn.Conv1d(64, 64, 1)
+        self.glm1_bn2 = nn.BatchNorm1d(64)
 
-        # Encode local features
-        local_feat, deep_feat = self.encoder(features)  # (B,256,N), (B,1024,N)
+        # MLP-2
+        self.mlp2_conv1 = nn.Conv1d(64, 64, 1)
+        self.mlp2_bn1 = nn.BatchNorm1d(64)
+        self.mlp2_conv2 = nn.Conv1d(64, 128, 1)
+        self.mlp2_bn2 = nn.BatchNorm1d(128)
+        self.mlp2_conv3 = nn.Conv1d(128, 512, 1)
+        self.mlp2_bn3 = nn.BatchNorm1d(512)
 
-        # Global max pooling
-        global_feat = deep_feat.max(dim=2, keepdim=True)[0]  # (B, 1024, 1)
-        global_feat = global_feat.expand(-1, -1, n_points)   # (B, 1024, N)
+        # GLM-2
+        self.glm2_conv1_1 = nn.Conv1d(512, 128, 1)
+        self.glm2_conv1_2 = nn.Conv1d(512, 128, 1)
+        self.glm2_conv1_3 = nn.Conv1d(512, 128, 1)
+        self.glm2_bn1_1 = nn.BatchNorm1d(128)
+        self.glm2_bn1_2 = nn.BatchNorm1d(128)
+        self.glm2_bn1_3 = nn.BatchNorm1d(128)
+        self.glm2_conv2 = nn.Conv1d(384, 512, 1)
+        self.glm2_bn2 = nn.BatchNorm1d(512)
 
-        # Concatenate local + global
-        combined = torch.cat([local_feat, global_feat], dim=1)  # (B, 1280, N)
+        # MLP-3 (64 + 512 + 512 + 512 = 1600)
+        self.mlp3_conv1 = nn.Conv1d(1600, 256, 1)
+        self.mlp3_conv2 = nn.Conv1d(256, 256, 1)
+        self.mlp3_bn1_1 = nn.BatchNorm1d(256)
+        self.mlp3_bn1_2 = nn.BatchNorm1d(256)
+        self.mlp3_conv3 = nn.Conv1d(256, 128, 1)
+        self.mlp3_conv4 = nn.Conv1d(128, 128, 1)
+        self.mlp3_bn2_1 = nn.BatchNorm1d(128)
+        self.mlp3_bn2_2 = nn.BatchNorm1d(128)
 
-        # Segmentation head
-        logits = self.seg_head(combined)  # (B, C, N)
-        return logits.transpose(1, 2)     # (B, N, C)
+        # Output
+        self.output_conv = nn.Conv1d(128, num_classes, 1)
+        self.with_dropout = with_dropout
+        if with_dropout:
+            self.dropout = nn.Dropout(p=dropout_p)
 
-    def inference(self, point_cloud: np.ndarray) -> np.ndarray:
-        """Run inference on a single point cloud. Input/output are numpy arrays.
+    def forward(
+        self,
+        x: torch.Tensor,
+        a_s: torch.Tensor,
+        a_l: torch.Tensor,
+    ) -> torch.Tensor:
+        """Forward pass.
 
         Args:
-            point_cloud: (N, 7) float32 array
-        Returns:
-            labels: (N,) int array of class indices
-        """
-        self.eval()
-        device = next(self.parameters()).device
-        x = torch.from_numpy(point_cloud).unsqueeze(0).float().to(device)
-        with torch.no_grad():
-            logits = self.forward(x)  # (1, N, C)
-            probs = F.softmax(logits, dim=-1)
-        labels = probs[0].argmax(dim=-1).cpu().numpy()
-        return labels
-
-    def inference_with_probs(self, point_cloud: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """Run inference returning both labels and probabilities.
+            x: (B, C, N) input features.
+            a_s: (B, N, N) small-scale adjacency.
+            a_l: (B, N, N) large-scale adjacency.
 
         Returns:
-            (labels (N,), probabilities (N, C))
+            (B, N, num_classes) softmax probabilities.
         """
-        self.eval()
-        device = next(self.parameters()).device
-        x = torch.from_numpy(point_cloud).unsqueeze(0).float().to(device)
-        with torch.no_grad():
-            logits = self.forward(x)
-            probs = F.softmax(logits, dim=-1)
-        probs_np = probs[0].cpu().numpy()
-        labels = probs_np.argmax(axis=-1)
-        return labels, probs_np
+        n_pts = x.size(2)
 
-    def model_summary(self) -> dict:
-        """Return model parameter count and architecture summary."""
-        total = sum(p.numel() for p in self.parameters())
-        trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return {
-            "model_name": "MeshSegNet",
-            "num_classes": self.num_classes,
-            "total_parameters": total,
-            "trainable_parameters": trainable,
-            "input_shape": f"(B, {AI_POINT_CLOUD_SIZE}, 7)",
-            "output_shape": f"(B, {AI_POINT_CLOUD_SIZE}, {self.num_classes})",
-        }
+        # MLP-1
+        x = F.relu(self.mlp1_bn1(self.mlp1_conv1(x)))
+        x = F.relu(self.mlp1_bn2(self.mlp1_conv2(x)))
 
+        # FTM
+        trans_feat = self.fstn(x)
+        x = x.transpose(2, 1)
+        x_ftm = torch.bmm(x, trans_feat)
 
-class FocalLoss(nn.Module):
-    """Focal Loss for handling class imbalance in tooth segmentation."""
+        # GLM-1
+        sap = torch.bmm(a_s, x_ftm).transpose(2, 1)
+        x_ftm = x_ftm.transpose(2, 1)
+        x = F.relu(self.glm1_bn1_1(self.glm1_conv1_1(x_ftm)))
+        glm_1_sap = F.relu(self.glm1_bn1_2(self.glm1_conv1_2(sap)))
+        x = torch.cat([x, glm_1_sap], dim=1)
+        x = F.relu(self.glm1_bn2(self.glm1_conv2(x)))
 
-    def __init__(self, gamma: float = 2.0, weight: torch.Tensor | None = None) -> None:
-        super().__init__()
-        self.gamma = gamma
-        self.weight = weight
+        # MLP-2
+        x = F.relu(self.mlp2_bn1(self.mlp2_conv1(x)))
+        x = F.relu(self.mlp2_bn2(self.mlp2_conv2(x)))
+        x_mlp2 = F.relu(self.mlp2_bn3(self.mlp2_conv3(x)))
+        if self.with_dropout:
+            x_mlp2 = self.dropout(x_mlp2)
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        """Compute focal loss. inputs: (B*N, C), targets: (B*N,)."""
-        ce_loss = F.cross_entropy(inputs, targets, weight=self.weight, reduction="none")
-        pt = torch.exp(-ce_loss)
-        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
-        return focal_loss.mean()
+        # GLM-2
+        x_mlp2_t = x_mlp2.transpose(2, 1)
+        sap_1 = torch.bmm(a_s, x_mlp2_t).transpose(2, 1)
+        sap_2 = torch.bmm(a_l, x_mlp2_t).transpose(2, 1)
+        x = F.relu(self.glm2_bn1_1(self.glm2_conv1_1(x_mlp2)))
+        glm_2_sap_1 = F.relu(self.glm2_bn1_2(self.glm2_conv1_2(sap_1)))
+        glm_2_sap_2 = F.relu(self.glm2_bn1_3(self.glm2_conv1_3(sap_2)))
+        x = torch.cat([x, glm_2_sap_1, glm_2_sap_2], dim=1)
+        x_glm2 = F.relu(self.glm2_bn2(self.glm2_conv2(x)))
+
+        # GMP + Upsample
+        x = torch.max(x_glm2, 2, keepdim=True)[0]
+        x = nn.Upsample(n_pts)(x)
+
+        # Dense fusion
+        x = torch.cat([x, x_ftm, x_mlp2, x_glm2], dim=1)
+
+        # MLP-3
+        x = F.relu(self.mlp3_bn1_1(self.mlp3_conv1(x)))
+        x = F.relu(self.mlp3_bn1_2(self.mlp3_conv2(x)))
+        x = F.relu(self.mlp3_bn2_1(self.mlp3_conv3(x)))
+        if self.with_dropout:
+            x = self.dropout(x)
+        x = F.relu(self.mlp3_bn2_2(self.mlp3_conv4(x)))
+
+        # Output
+        x = self.output_conv(x)
+        x = x.transpose(2, 1).contiguous()
+        x = F.softmax(x.view(-1, self.num_classes), dim=-1)
+        return x.view(-1, n_pts, self.num_classes)

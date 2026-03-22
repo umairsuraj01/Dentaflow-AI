@@ -1,114 +1,246 @@
-# segmentation_runner.py — Model inference wrapper + mock mode.
+# segmentation_runner.py — Real MeshSegNet inference on dental meshes.
+#
+# Input: STL mesh file
+# Output: per-cell (face) labels and probabilities
+#
+# Pipeline:
+#   1. Load mesh with vedo
+#   2. Downsample to ≤10,000 cells
+#   3. Extract 15 features per cell (vertices + barycenters + normals)
+#   4. Build adjacency matrices (A_S, A_L)
+#   5. Run MeshSegNet forward pass
+#   6. Map downsampled labels back to original mesh
 
 from __future__ import annotations
 
 import logging
-import os
 import time
 
 import numpy as np
-
-from app.constants import AI_NUM_CLASSES, AI_POINT_CLOUD_SIZE
-from ai.utils.fdi_numbering import FDI_ALL, fdi_to_class
+from scipy.spatial import distance_matrix
 
 logger = logging.getLogger(__name__)
 
+NUM_CLASSES = 15
+MAX_CELLS = 10000
 
-def run_inference(
-    point_cloud: np.ndarray,
-    checkpoint_path: str | None = None,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Run segmentation inference on a point cloud.
 
-    If AI_MOCK_MODE is enabled or no model exists, falls back to mock.
+def detect_jaw_type(mesh) -> str:
+    """Detect if mesh is upper or lower jaw from surface normals.
 
-    Args:
-        point_cloud: (N, 7) float32 array
-        checkpoint_path: optional path to model weights
+    Upper jaw (maxillary): normals predominantly face downward (Y < 0).
+    Lower jaw (mandibular): normals predominantly face upward (Y > 0).
+    """
+    mesh.compute_normals()
+    normals = mesh.celldata["Normals"]
+    avg_ny = np.mean(normals[:, 1])
+    jaw = "upper" if avg_ny < 0 else "lower"
+    logger.info("Detected jaw type: %s (avg normal Y=%.3f)", jaw, avg_ny)
+    return jaw
+
+
+def _get_cell_centers(mesh) -> np.ndarray:
+    """Get cell centers as numpy array (compatible with old/new vedo)."""
+    cc = mesh.cell_centers()
+    if hasattr(cc, 'points'):
+        return np.asarray(cc.points)
+    return np.asarray(cc)
+
+
+def preprocess_mesh(mesh) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Extract features from a vedo mesh for MeshSegNet.
 
     Returns:
-        (labels (N,), probabilities (N, C))
+        X: (N, 15) feature matrix — 9 cell vertices + 3 barycenters + 3 normals
+        A_S: (N, N) small-scale adjacency (distance < 0.1)
+        A_L: (N, N) large-scale adjacency (distance < 0.2)
     """
-    mock_mode = os.getenv("AI_MOCK_MODE", "true").lower() == "true"
+    # Center mesh at origin
+    points = np.asarray(mesh.points).copy()
+    mean_center = mesh.center_of_mass()
+    points[:, 0:3] -= mean_center[0:3]
 
-    if mock_mode:
-        logger.info("Running in MOCK mode — returning plausible labels")
-        return mock_inference(point_cloud)
+    # Cell vertices (9 features: 3 vertices × 3 coords)
+    ids = np.array(mesh.cells)
+    cells = points[ids].reshape(mesh.ncells, 9).astype(np.float32)
+
+    # Normals
+    mesh.compute_normals()
+    normals = mesh.celldata["Normals"].copy()
+
+    # Barycenters
+    barycenters = _get_cell_centers(mesh).copy()
+    barycenters -= mean_center[0:3]
+
+    # Normalize
+    maxs = points.max(axis=0)
+    mins = points.min(axis=0)
+    means = points.mean(axis=0)
+    stds = points.std(axis=0)
+    nmeans = normals.mean(axis=0)
+    nstds = normals.std(axis=0)
+
+    # Avoid division by zero
+    stds[stds < 1e-8] = 1.0
+    nstds[nstds < 1e-8] = 1.0
+    denom = maxs - mins
+    denom[denom < 1e-8] = 1.0
+
+    for i in range(3):
+        cells[:, i] = (cells[:, i] - means[i]) / stds[i]
+        cells[:, i + 3] = (cells[:, i + 3] - means[i]) / stds[i]
+        cells[:, i + 6] = (cells[:, i + 6] - means[i]) / stds[i]
+        barycenters[:, i] = (barycenters[:, i] - mins[i]) / denom[i]
+        normals[:, i] = (normals[:, i] - nmeans[i]) / nstds[i]
+
+    X = np.column_stack((cells, barycenters, normals))  # (N, 15)
+
+    # Build adjacency matrices from barycenter distances
+    D = distance_matrix(X[:, 9:12], X[:, 9:12])
+
+    A_S = np.zeros_like(D, dtype=np.float32)
+    A_S[D < 0.1] = 1.0
+    row_sums = A_S.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1.0
+    A_S = A_S / row_sums
+
+    A_L = np.zeros_like(D, dtype=np.float32)
+    A_L[D < 0.2] = 1.0
+    row_sums = A_L.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1.0
+    A_L = A_L / row_sums
+
+    return X.astype(np.float32), A_S, A_L
+
+
+def run_inference(
+    stl_path: str,
+    jaw: str | None = None,
+) -> tuple[np.ndarray, np.ndarray, str]:
+    """Run MeshSegNet inference on an STL file.
+
+    Args:
+        stl_path: Path to the STL mesh file.
+        jaw: "upper" or "lower". Auto-detected if None.
+
+    Returns:
+        face_labels: (F,) int array — class index per original face (0=gum, 1-14=teeth).
+        face_probs: (F, 15) float array — class probabilities per original face.
+        jaw: Detected or specified jaw type.
+    """
+    import torch
+    import vedo
 
     from ai.models.model_loader import load_model, get_device
-    model = load_model(checkpoint_path, device=get_device())
-    if model is None:
-        logger.warning("No trained model found — falling back to mock")
-        return mock_inference(point_cloud)
 
     start = time.time()
-    labels, probs = model.inference_with_probs(point_cloud)
-    elapsed = time.time() - start
-    logger.info("Inference completed in %.2fs", elapsed)
-    return labels, probs
 
+    # 1. Load mesh
+    logger.info("Loading mesh: %s", stl_path)
+    mesh = vedo.load(stl_path)
+    original_ncells = mesh.ncells
+    logger.info("Mesh loaded: %d cells", original_ncells)
 
-def mock_inference(point_cloud: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Generate plausible mock segmentation labels.
+    # 2. Detect jaw type
+    if jaw is None:
+        jaw = detect_jaw_type(mesh)
 
-    Divides the point cloud spatially into tooth-like segments,
-    simulating a realistic segmentation result.
-    """
-    n_points = point_cloud.shape[0]
-    n_classes = AI_NUM_CLASSES
-    labels = np.zeros(n_points, dtype=np.int64)
-    probs = np.zeros((n_points, n_classes), dtype=np.float32)
+    # 3. Load model
+    device = get_device()
+    model = load_model(jaw=jaw, device=device)
+    if model is None:
+        raise RuntimeError(
+            f"No pretrained weights found for {jaw} jaw. "
+            f"Expected checkpoint in ai/checkpoints/"
+        )
 
-    xyz = point_cloud[:, :3]
+    # 4. Downsample if needed
+    if mesh.ncells > MAX_CELLS:
+        logger.info("Downsampling from %d to %d cells...", mesh.ncells, MAX_CELLS)
+        ratio = MAX_CELLS / mesh.ncells
+        mesh_d = mesh.clone().decimate(fraction=ratio)
+        logger.info("Downsampled to %d cells", mesh_d.ncells)
+    else:
+        mesh_d = mesh.clone()
 
-    # Determine upper vs lower by Y coordinate (median split)
-    y_median = np.median(xyz[:, 1])
-    is_upper = xyz[:, 1] > y_median
+    # 5. Preprocess
+    logger.info("Preprocessing %d cells...", mesh_d.ncells)
+    X, A_S, A_L = preprocess_mesh(mesh_d)
 
-    # Split left/right by X coordinate
-    x_median = np.median(xyz[:, 0])
-    is_left = xyz[:, 0] < x_median
+    # 6. Run model
+    logger.info("Running MeshSegNet inference on %s...", device)
+    X_t = torch.from_numpy(X.T[np.newaxis, :, :]).to(device, dtype=torch.float)
+    A_S_t = torch.from_numpy(A_S[np.newaxis, :, :]).to(device, dtype=torch.float)
+    A_L_t = torch.from_numpy(A_L[np.newaxis, :, :]).to(device, dtype=torch.float)
 
-    # Assign 8 teeth per quadrant based on angular position from center
-    for quadrant_mask, fdi_range in [
-        (is_upper & ~is_left, list(range(11, 19))),  # Upper right
-        (is_upper & is_left, list(range(21, 29))),    # Upper left
-        (~is_upper & is_left, list(range(31, 39))),   # Lower left
-        (~is_upper & ~is_left, list(range(41, 49))),  # Lower right
-    ]:
-        indices = np.where(quadrant_mask)[0]
-        if len(indices) == 0:
-            continue
-        quad_xyz = xyz[indices]
-        center = quad_xyz.mean(axis=0)
-        # Compute angle from center for tooth assignment
-        dx = quad_xyz[:, 0] - center[0]
-        dz = quad_xyz[:, 2] - center[2]
-        angles = np.arctan2(dz, dx)
-        # Discretize angles into 8 bins
-        bins = np.digitize(angles, np.linspace(angles.min(), angles.max(), 9)) - 1
-        bins = np.clip(bins, 0, 7)
+    with torch.no_grad():
+        probs = model(X_t, A_S_t, A_L_t)  # (1, N, 15)
 
-        for bin_idx in range(8):
-            fdi = fdi_range[bin_idx]
-            class_idx = fdi_to_class(fdi)
-            bin_mask = bins == bin_idx
-            point_indices = indices[bin_mask]
-            labels[point_indices] = class_idx
-            # Set high confidence for mock
-            conf = np.random.uniform(0.75, 0.98)
-            probs[point_indices, class_idx] = conf
-            remaining = (1.0 - conf) / max(n_classes - 1, 1)
-            probs[point_indices] = remaining
-            probs[point_indices, class_idx] = conf
+    probs_np = probs.cpu().numpy()[0]  # (N, 15)
+    labels_d = np.argmax(probs_np, axis=1)  # (N,)
 
-    # Assign background to any unassigned points
-    bg_mask = labels == 0
-    probs[bg_mask, 0] = 0.95
-    probs[bg_mask, 1:] = 0.05 / (n_classes - 1)
-
+    elapsed_model = time.time() - start
+    unique_labels = np.unique(labels_d)
     logger.info(
-        "Mock inference: %d points, %d unique labels",
-        n_points, len(np.unique(labels)),
+        "Model inference done in %.2fs: %d unique labels on downsampled mesh",
+        elapsed_model, len(unique_labels),
     )
-    return labels, probs
+
+    # 7. Map labels back to original mesh (if downsampled)
+    if mesh_d.ncells < original_ncells:
+        logger.info("Mapping labels back to original %d cells...", original_ncells)
+        face_labels, face_probs = _upsample_labels(
+            mesh, mesh_d, labels_d, probs_np,
+        )
+    else:
+        face_labels = labels_d
+        face_probs = probs_np
+
+    elapsed = time.time() - start
+    logger.info(
+        "Segmentation complete: %d cells, %d unique labels, %.2fs total",
+        len(face_labels), len(np.unique(face_labels)), elapsed,
+    )
+
+    return face_labels, face_probs, jaw
+
+
+def _upsample_labels(
+    original_mesh,
+    downsampled_mesh,
+    labels_d: np.ndarray,
+    probs_d: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Map labels from downsampled mesh back to original mesh.
+
+    Uses distance-weighted probability interpolation (not label voting)
+    for smooth, clean boundaries. Each original face gets the weighted
+    average of its k nearest downsampled faces' probability vectors,
+    then takes argmax for the label.
+    """
+    from scipy.spatial import cKDTree
+
+    orig_centers = _get_cell_centers(original_mesh)
+    down_centers = _get_cell_centers(downsampled_mesh)
+
+    tree = cKDTree(down_centers)
+    k = min(15, len(down_centers))
+    dists, nn_indices = tree.query(orig_centers, k=k)
+
+    n_orig = len(orig_centers)
+    n_classes = probs_d.shape[1]
+
+    # Distance-weighted probability interpolation (vectorized)
+    weights = 1.0 / (dists + 1e-8)  # (N, k)
+    weights_norm = weights / weights.sum(axis=1, keepdims=True)  # normalize
+
+    # Gather neighbor probabilities: (N, k, C)
+    neighbor_probs = probs_d[nn_indices]  # (N, k, C)
+
+    # Weighted average of probabilities: (N, C)
+    face_probs = np.einsum('nk,nkc->nc', weights_norm, neighbor_probs).astype(np.float32)
+
+    # Labels from argmax on interpolated probabilities (smooth!)
+    face_labels = face_probs.argmax(axis=1).astype(np.int64)
+
+    return face_labels, face_probs

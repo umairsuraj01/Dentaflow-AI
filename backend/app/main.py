@@ -24,8 +24,17 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Handle startup and shutdown events."""
+    from app.database.connection import async_session_factory
+    from app.services.billing_seed import seed_pricing_plans
+
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Seed default pricing plans
+    async with async_session_factory() as session:
+        await seed_pricing_plans(session)
+        await session.commit()
+
     yield
 
 

@@ -24,17 +24,27 @@ async def get_stats(
     counts = await service.get_dashboard_stats(user)
     active = sum(
         counts.get(s, 0) for s in [
-            CaseStatus.SUBMITTED.value, CaseStatus.ASSIGNED.value,
-            CaseStatus.IN_PROGRESS.value,
+            CaseStatus.DRAFT.value, CaseStatus.SUBMITTED.value,
+            CaseStatus.ASSIGNED.value, CaseStatus.IN_PROGRESS.value,
         ]
     )
-    review = counts.get(CaseStatus.REVIEW.value, 0)
-    completed = counts.get(CaseStatus.COMPLETED.value, 0)
+    review = sum(
+        counts.get(s, 0) for s in [
+            CaseStatus.REVIEW.value, CaseStatus.REVISION_REQUESTED.value,
+        ]
+    )
+    completed = sum(
+        counts.get(s, 0) for s in [
+            CaseStatus.APPROVED.value, CaseStatus.COMPLETED.value,
+        ]
+    )
+    total_cases = sum(counts.values())
     return ApiResponse(
         success=True, message="Stats retrieved",
         data=DashboardStats(
             active_cases=active,
             pending_review=review,
             completed=completed,
+            total_revenue=total_cases * 35.0,
         ),
     )

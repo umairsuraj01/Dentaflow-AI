@@ -1,7 +1,7 @@
+// REACT NATIVE READY: No DOM dependencies. Copy this file to RN project unchanged.
 // useToothInstructions.ts — Hook for tooth instruction CRUD (local or API-backed).
-// REACT NATIVE READY: no DOM dependencies.
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toothInstructionService } from '../services/tooth-instruction.service';
 import type { ToothInstruction, ToothInstructionCreate } from '../types/tooth-instruction.types';

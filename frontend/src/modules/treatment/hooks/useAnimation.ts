@@ -1,3 +1,4 @@
+// REACT NATIVE: Has DOM dependencies (requestAnimationFrame, Three.js). Needs RN adapter.
 // useAnimation.ts — Interpolation logic for treatment step animation.
 
 import { useState, useRef, useCallback, useEffect } from 'react';

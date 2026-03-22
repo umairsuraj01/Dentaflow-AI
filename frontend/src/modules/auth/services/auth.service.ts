@@ -35,6 +35,25 @@ async function verifyEmail(token: string): Promise<void> {
   await api.post('/auth/verify-email', { token });
 }
 
+async function updateProfile(data: {
+  full_name?: string;
+  clinic_name?: string;
+  specialization?: string;
+  experience_years?: number;
+  country?: string;
+  timezone?: string;
+}): Promise<User> {
+  const res = await api.put<ApiResponse<User>>('/auth/me', data);
+  return res.data.data!;
+}
+
+async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api.put('/auth/me/password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+}
+
 export const authService = {
   login,
   register,
@@ -43,4 +62,6 @@ export const authService = {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  updateProfile,
+  changePassword,
 };

@@ -53,17 +53,17 @@ export function NewCasePage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showNewPatient, setShowNewPatient] = useState(false);
   const [newPatient, setNewPatient] = useState<PatientCreateRequest>({ first_name: '', last_name: '' });
-  const { patients, isLoading: patientsLoading, createPatient } = usePatients(patientSearch);
+  const { patients, isLoading: _patientsLoading, createPatient } = usePatients(patientSearch);
 
   // Step 2 state
   const [treatmentType, setTreatmentType] = useState<TreatmentType>('FULL_ARCH');
   const [priority, setPriority] = useState<CasePriority>('NORMAL');
   const [complaint, setComplaint] = useState('');
   const [goals, setGoals] = useState('');
-  const [specialInst, setSpecialInst] = useState('');
+  const [specialInst, _setSpecialInst] = useState('');
 
   // Step 3 state
-  const [caseId, setCaseId] = useState<string | undefined>();
+  const [caseId, _setCaseId] = useState<string | undefined>();
   const { uploads, uploadFile, removeUpload } = useFileUpload(caseId);
   const { instructions, addInstruction, removeInstruction } = useToothInstructions({});
 

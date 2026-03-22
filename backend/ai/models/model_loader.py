@@ -1,4 +1,7 @@
-# model_loader.py — Load/cache model from checkpoint.
+# model_loader.py — Load/cache pretrained MeshSegNet models.
+#
+# Two separate models: upper jaw (maxillary) and lower jaw (mandibular).
+# Weights from: https://github.com/Tai-Hsien/MeshSegNet
 
 from __future__ import annotations
 
@@ -6,41 +9,46 @@ import logging
 from pathlib import Path
 from threading import Lock
 
-from app.constants import AI_NUM_CLASSES
-
 logger = logging.getLogger(__name__)
 
 _model_cache: dict = {}
 _lock = Lock()
 
-DEFAULT_MODEL_PATH = Path(__file__).resolve().parent.parent / "checkpoints" / "meshsegnet_latest.pth"
+CHECKPOINTS_DIR = Path(__file__).resolve().parent.parent / "checkpoints"
+UPPER_CHECKPOINT = CHECKPOINTS_DIR / "MeshSegNet_Max_15_classes_72samples_lr1e-2_best.zip"
+LOWER_CHECKPOINT = CHECKPOINTS_DIR / "MeshSegNet_Man_15_classes_72samples_lr1e-2_best.zip"
 
 
-def load_model(
-    checkpoint_path: str | None = None,
-    device: str = "cpu",
-    num_classes: int = AI_NUM_CLASSES,
-):
-    """Load MeshSegNet from checkpoint. Returns None if no checkpoint exists."""
+def load_model(jaw: str = "upper", device: str = "cpu"):
+    """Load pretrained MeshSegNet for upper or lower jaw.
+
+    Args:
+        jaw: "upper" or "lower".
+        device: "cpu", "cuda", or "mps".
+
+    Returns:
+        MeshSegNet model in eval mode, or None if checkpoint missing.
+    """
     import torch
     from ai.models.meshsegnet import MeshSegNet
 
-    path = Path(checkpoint_path) if checkpoint_path else DEFAULT_MODEL_PATH
-    cache_key = f"{path}:{device}"
+    ckpt_path = UPPER_CHECKPOINT if jaw == "upper" else LOWER_CHECKPOINT
+    cache_key = f"{jaw}:{device}"
 
     with _lock:
         if cache_key in _model_cache:
-            logger.debug("Returning cached model for %s", cache_key)
             return _model_cache[cache_key]
 
-    if not path.exists():
-        logger.warning("No checkpoint found at %s", path)
+    if not ckpt_path.exists():
+        logger.warning("No checkpoint found at %s", ckpt_path)
         return None
 
-    model = MeshSegNet(num_classes=num_classes)
-    checkpoint = torch.load(str(path), map_location=device, weights_only=True)
+    logger.info("Loading MeshSegNet (%s jaw) from %s ...", jaw, ckpt_path.name)
+    model = MeshSegNet(num_classes=15, num_channels=15)
 
-    if "model_state_dict" in checkpoint:
+    # Load weights (zip format from original MeshSegNet repo)
+    checkpoint = torch.load(str(ckpt_path), map_location=device, weights_only=False)
+    if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
         model.load_state_dict(checkpoint["model_state_dict"])
     else:
         model.load_state_dict(checkpoint)
@@ -51,7 +59,7 @@ def load_model(
     with _lock:
         _model_cache[cache_key] = model
 
-    logger.info("Loaded model from %s on %s", path, device)
+    logger.info("MeshSegNet (%s) loaded on %s", jaw, device)
     return model
 
 

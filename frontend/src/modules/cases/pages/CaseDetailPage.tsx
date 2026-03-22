@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, MessageSquare, Eye, Cuboid, ClipboardList, Send, Brain, Move3d } from 'lucide-react';
+import { FileText, MessageSquare, Eye, Cuboid, ClipboardList, Send, Move3d } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
@@ -22,7 +22,6 @@ const TABS = [
   { id: 'files', label: 'Files', icon: FileText },
   { id: 'instructions', label: 'Instructions', icon: ClipboardList },
   { id: 'viewer', label: '3D Viewer', icon: Cuboid },
-  { id: 'ai', label: 'AI Segmentation', icon: Brain },
   { id: 'treatment', label: 'Treatment', icon: Move3d },
   { id: 'notes', label: 'Notes', icon: MessageSquare },
 ] as const;
@@ -36,7 +35,7 @@ export function CaseDetailPage() {
   const { instructions, addInstruction, removeInstruction } = useToothInstructions({ caseId: id });
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [noteText, setNoteText] = useState('');
-  const [revisionReason, setRevisionReason] = useState('');
+  const [revisionReason, _setRevisionReason] = useState('');
 
   if (isLoading) {
     return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
@@ -162,11 +161,11 @@ export function CaseDetailPage() {
                       <p className="text-xs text-gray-500">{(f.file_size_bytes / 1024).toFixed(0)} KB</p>
                       {['stl', 'obj', 'ply'].includes(f.file_format?.toLowerCase() ?? '') && (
                         <Link
-                          to={`/cases/${caseData.id}/ai?fileId=${f.id}`}
-                          className="mt-2 flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
+                          to={`/cases/${caseData.id}/treatment`}
+                          className="mt-2 flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-800"
                         >
-                          <Brain className="h-3 w-3" />
-                          {f.is_ai_processed ? 'View AI Results' : 'Run AI Segmentation'}
+                          <Move3d className="h-3 w-3" />
+                          Open in Treatment Planner
                         </Link>
                       )}
                     </div>
@@ -197,35 +196,31 @@ export function CaseDetailPage() {
           <DentalViewer3D />
         )}
 
-        {/* AI Segmentation Tab */}
-        {activeTab === 'ai' && (
-          <Card>
-            <CardHeader><CardTitle>AI Tooth Segmentation</CardTitle></CardHeader>
-            <CardContent className="text-center py-8">
-              <Brain className="mx-auto mb-3 h-12 w-12 text-blue-400" />
-              <p className="mb-4 text-sm text-gray-500">
-                Run AI-powered segmentation to identify and label individual teeth in your 3D scans.
-              </p>
-              <Link
-                to={`/cases/${caseData.id}/ai`}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                <Brain className="h-4 w-4" />
-                Open AI Segmentation View
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Treatment Tab */}
+        {/* Treatment Tab — single entry point for AI + treatment planning */}
         {activeTab === 'treatment' && (
           <Card>
             <CardHeader><CardTitle>Treatment Planning</CardTitle></CardHeader>
             <CardContent className="text-center py-8">
               <Move3d className="mx-auto mb-3 h-12 w-12 text-emerald-400" />
-              <p className="mb-4 text-sm text-gray-500">
-                Plan tooth movements with step-by-step animation preview.
+              <p className="mb-3 text-sm text-gray-500">
+                AI segments your scan into gum and teeth, then you can review, edit boundaries, and plan tooth movements.
               </p>
+              <div className="flex items-center justify-center gap-6 mb-5 text-xs text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-600">1</span>
+                  AI Segmentation
+                </div>
+                <span>&rarr;</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-600">2</span>
+                  Review & Edit
+                </div>
+                <span>&rarr;</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-600">3</span>
+                  Treatment Plan
+                </div>
+              </div>
               <Link
                 to={`/cases/${caseData.id}/treatment`}
                 className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"

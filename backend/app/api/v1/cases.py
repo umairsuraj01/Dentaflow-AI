@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.connection import get_db
@@ -56,6 +57,75 @@ async def list_cases(
             total=total, page=page, per_page=per_page,
             total_pages=(total + per_page - 1) // per_page,
         ),
+    )
+
+
+@router.get("/search")
+async def search_global(
+    q: str = "",
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Global search across cases and patients."""
+    if not q or len(q) < 2:
+        return ApiResponse(
+            success=True, message="Search results",
+            data={"cases": [], "patients": []},
+        )
+    from app.models.patient import Patient
+    from app.models.case import Case
+
+    case_q = (
+        select(Case)
+        .where(
+            Case.dentist_id == user.id,
+            or_(
+                Case.case_number.ilike(f"%{q}%"),
+                Case.chief_complaint.ilike(f"%{q}%"),
+            ),
+        )
+        .limit(5)
+    )
+    cases = (await db.execute(case_q)).scalars().all()
+
+    pat_q = (
+        select(Patient)
+        .where(
+            Patient.dentist_id == user.id,
+            Patient.is_deleted == False,
+            or_(
+                Patient.first_name.ilike(f"%{q}%"),
+                Patient.last_name.ilike(f"%{q}%"),
+                Patient.patient_reference.ilike(f"%{q}%"),
+            ),
+        )
+        .limit(5)
+    )
+    patients = (await db.execute(pat_q)).scalars().all()
+
+    return ApiResponse(
+        success=True,
+        message="Search results",
+        data={
+            "cases": [
+                {
+                    "id": str(c.id),
+                    "case_number": c.case_number,
+                    "status": c.status,
+                    "treatment_type": c.treatment_type,
+                }
+                for c in cases
+            ],
+            "patients": [
+                {
+                    "id": str(p.id),
+                    "first_name": p.first_name,
+                    "last_name": p.last_name,
+                    "patient_reference": p.patient_reference,
+                }
+                for p in patients
+            ],
+        },
     )
 
 

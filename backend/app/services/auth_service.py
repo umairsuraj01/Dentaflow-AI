@@ -130,6 +130,23 @@ class AuthService:
             timedelta(hours=24),
         )
 
+    async def update_profile(self, user: User, data) -> User:
+        """Update user profile fields."""
+        update_fields = data.model_dump(exclude_unset=True)
+        for field, value in update_fields.items():
+            if value is not None:
+                setattr(user, field, value)
+        return await self.repo.update(user)
+
+    async def change_password(
+        self, user: User, current_password: str, new_password: str
+    ) -> None:
+        """Change password after verifying current one."""
+        if not self._verify_password(current_password, user.password_hash):
+            raise AuthenticationError("Current password is incorrect")
+        user.password_hash = self._hash_password(new_password)
+        await self.repo.update(user)
+
     # -- Private helpers ---------------------------------------------------
 
     def _hash_password(self, password: str) -> str:
