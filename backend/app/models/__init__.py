@@ -18,6 +18,7 @@ from app.models.invoice import Invoice
 from app.models.subscription import Subscription
 from app.models.payment import Payment
 from app.models.notification import Notification
+from app.models.manufacturing_order import ManufacturingOrder
 
 __all__ = [
     "User",
@@ -37,4 +38,5 @@ __all__ = [
     "Subscription",
     "Payment",
     "Notification",
+    "ManufacturingOrder",
 ]

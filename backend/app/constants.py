@@ -233,3 +233,43 @@ class TreatmentPlanStatus(str, Enum):
     SUBMITTED = "SUBMITTED"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+
+
+# -- Manufacturing --------------------------------------------------------
+
+APP_ORDER_PREFIX = "MFG"
+
+ALIGNER_MATERIALS = ["Molekur Pro S", "Zendura FLX", "Essix ACE"]
+ATTACHMENT_TEMPLATE_MATERIALS = ["Erkolen 0.6mm", "Erkolen 1.0mm", "Duran 0.5mm"]
+TRIMLINE_OPTIONS = ["Straight", "Scalloped"]
+
+
+class OrderStatus(str, Enum):
+    """Manufacturing order lifecycle."""
+
+    NEW = "NEW"
+    IN_PROGRESS = "IN_PROGRESS"
+    SHIPPED = "SHIPPED"
+    CANCELLED = "CANCELLED"
+
+
+class OrderType(str, Enum):
+    """Whether this is a default or replacement order."""
+
+    DEFAULT = "DEFAULT"
+    REPLACEMENT = "REPLACEMENT"
+
+
+class ManufacturingCaseType(str, Enum):
+    """Initial treatment vs refinement."""
+
+    INITIAL = "INITIAL"
+    REFINEMENT = "REFINEMENT"
+
+
+class ReplacementReason(str, Enum):
+    """Reason for a replacement order."""
+
+    DEFECTIVE = "DEFECTIVE"
+    MISSING = "MISSING"
+    OTHER = "OTHER"

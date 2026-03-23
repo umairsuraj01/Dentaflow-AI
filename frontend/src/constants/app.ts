@@ -73,5 +73,6 @@ export const ROUTES = {
   CASE_DETAIL: (id: string) => `/cases/${id}`,
   AI_PROCESSING: (caseId: string, fileId: string) => `/cases/${caseId}/ai?fileId=${fileId}`,
   BILLING: '/billing',
+  MANUFACTURING: '/manufacturing',
   ADMIN: '/admin',
 } as const;

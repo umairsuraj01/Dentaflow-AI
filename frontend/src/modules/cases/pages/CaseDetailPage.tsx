@@ -45,8 +45,8 @@ export function CaseDetailPage() {
     return <div className="py-20 text-center text-gray-500">Case not found</div>;
   }
 
-  const isDentist = user?.role === 'DENTIST';
-  const canEdit = isDentist && ['DRAFT', 'SUBMITTED'].includes(caseData.status);
+  const canEditRole = ['DENTIST', 'SUPER_ADMIN'].includes(user?.role || '');
+  const canEdit = canEditRole && ['DRAFT', 'SUBMITTED'].includes(caseData.status);
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
@@ -65,7 +65,7 @@ export function CaseDetailPage() {
             <CasePriorityBadge priority={caseData.priority} />
           </div>
         </div>
-        {isDentist && caseData.status === 'REVIEW' && (
+        {canEditRole && caseData.status === 'REVIEW' && (
           <div className="flex gap-2">
             <Button variant="mint" onClick={() => approve()}>Approve</Button>
             <Button variant="outline" onClick={() => {

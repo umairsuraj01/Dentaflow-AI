@@ -1,310 +1,261 @@
-// PricingPage.tsx — Pricing plans with subscribe-to-Stripe flow.
+// PricingPage.tsx — Premium pricing page with plan comparison.
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Check, ArrowLeft, Star, Zap, Building2, CreditCard } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  Check, ArrowLeft, Star, Zap, Building2, CreditCard,
+  Sparkles, Shield, Clock, Headphones, ArrowRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
 import { billingService } from '../services/billing.service';
 import type { PricingPlan } from '../types/billing.types';
 
-const PLAN_META: Record<string, { icon: typeof Star; color: string; popular?: boolean }> = {
-  'pay-per-case': { icon: CreditCard, color: 'text-gray-600' },
-  starter: { icon: Zap, color: 'text-blue-600' },
-  professional: { icon: Star, color: 'text-electric', popular: true },
-  enterprise: { icon: Building2, color: 'text-purple-600' },
+const PLAN_META: Record<string, { icon: typeof Star; gradient: string; ring: string; popular?: boolean }> = {
+  'pay-per-case': { icon: CreditCard, gradient: 'from-slate-500 to-slate-600', ring: 'ring-slate-200' },
+  starter: { icon: Zap, gradient: 'from-blue-500 to-blue-600', ring: 'ring-blue-200' },
+  professional: { icon: Star, gradient: 'from-violet-500 to-purple-600', ring: 'ring-violet-300', popular: true },
+  enterprise: { icon: Building2, gradient: 'from-amber-500 to-orange-600', ring: 'ring-amber-200' },
 };
 
 const FALLBACK_PLANS: PricingPlan[] = [
   {
-    id: 'f-1',
-    name: 'Pay Per Case',
-    slug: 'pay-per-case',
-    monthly_fee_usd: 0,
-    price_per_case_usd: 35,
-    included_cases_per_month: 0,
-    overage_per_case_usd: 35,
-    features: [
-      'No monthly commitment',
-      'Full AI segmentation',
-      'Treatment planning',
-      'STL export',
-      'Email support',
-    ],
-    turnaround_days: 5,
-    sort_order: 0,
+    id: 'f-1', name: 'Pay Per Case', slug: 'pay-per-case',
+    monthly_fee_usd: 0, price_per_case_usd: 35, included_cases_per_month: 0, overage_per_case_usd: 35,
+    features: ['No monthly commitment', 'Full AI segmentation', 'Treatment planning', 'STL export', 'Email support'],
+    turnaround_days: 5, sort_order: 0,
   },
   {
-    id: 'f-2',
-    name: 'Starter',
-    slug: 'starter',
-    monthly_fee_usd: 199,
-    price_per_case_usd: null,
-    included_cases_per_month: 10,
-    overage_per_case_usd: 25,
-    features: [
-      '10 cases per month included',
-      'Full AI segmentation',
-      'Treatment planning',
-      'STL export',
-      'Priority email support',
-      '3-day turnaround',
-    ],
-    turnaround_days: 3,
-    sort_order: 1,
+    id: 'f-2', name: 'Starter', slug: 'starter',
+    monthly_fee_usd: 199, price_per_case_usd: null, included_cases_per_month: 10, overage_per_case_usd: 25,
+    features: ['10 cases / month included', 'Full AI segmentation', 'Treatment planning', 'STL export', 'Priority support', '3-day turnaround'],
+    turnaround_days: 3, sort_order: 1,
   },
   {
-    id: 'f-3',
-    name: 'Professional',
-    slug: 'professional',
-    monthly_fee_usd: 399,
-    price_per_case_usd: null,
-    included_cases_per_month: 25,
-    overage_per_case_usd: 20,
-    features: [
-      '25 cases per month included',
-      'Full AI segmentation',
-      'Advanced treatment planning',
-      'STL export & staging',
-      'Phone & email support',
-      '2-day turnaround',
-      'Clinical summary reports',
-    ],
-    turnaround_days: 2,
-    sort_order: 2,
+    id: 'f-3', name: 'Professional', slug: 'professional',
+    monthly_fee_usd: 399, price_per_case_usd: null, included_cases_per_month: 25, overage_per_case_usd: 20,
+    features: ['25 cases / month included', 'Full AI segmentation', 'Advanced treatment planning', 'STL export & staging', 'Phone & email support', '2-day turnaround', 'Clinical summary reports'],
+    turnaround_days: 2, sort_order: 2,
   },
   {
-    id: 'f-4',
-    name: 'Enterprise',
-    slug: 'enterprise',
-    monthly_fee_usd: 799,
-    price_per_case_usd: null,
-    included_cases_per_month: 75,
-    overage_per_case_usd: 15,
-    features: [
-      '75 cases per month included',
-      'Full AI segmentation',
-      'Advanced treatment planning',
-      'STL export & staging',
-      'Dedicated account manager',
-      '1-day turnaround',
-      'Clinical summary reports',
-      'API access',
-      'Custom integrations',
-    ],
-    turnaround_days: 1,
-    sort_order: 3,
+    id: 'f-4', name: 'Enterprise', slug: 'enterprise',
+    monthly_fee_usd: 799, price_per_case_usd: null, included_cases_per_month: 75, overage_per_case_usd: 15,
+    features: ['75 cases / month included', 'Full AI segmentation', 'Advanced treatment planning', 'STL export & staging', 'Dedicated account manager', '1-day turnaround', 'Clinical reports', 'API access', 'Custom integrations'],
+    turnaround_days: 1, sort_order: 3,
   },
 ];
 
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } };
+const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } } };
+
 export function PricingPage() {
   const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
-  const { data: plans, isLoading } = useQuery({
-    queryKey: ['billing-plans'],
-    queryFn: billingService.getPlans,
-  });
-
-  const { data: stats } = useQuery({
-    queryKey: ['billing-stats'],
-    queryFn: billingService.getStats,
-  });
+  const { data: plans, isLoading } = useQuery({ queryKey: ['billing-plans'], queryFn: billingService.getPlans });
+  const { data: stats } = useQuery({ queryKey: ['billing-stats'], queryFn: billingService.getStats });
 
   const subscribeMutation = useMutation({
     mutationFn: (slug: string) => billingService.subscribe(slug),
-    onSuccess: (url) => {
-      window.location.href = url;
-    },
+    onSuccess: (url) => { window.location.href = url; },
   });
 
-  const displayPlans = (plans && plans.length > 0 ? plans : FALLBACK_PLANS).sort(
-    (a, b) => a.sort_order - b.sort_order,
-  );
+  const displayPlans = (plans && plans.length > 0 ? plans : FALLBACK_PLANS).sort((a, b) => a.sort_order - b.sort_order);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex justify-center py-32"><Spinner size="lg" /></div>;
 
   return (
-    <div>
+    <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
+      <motion.div variants={fadeUp} className="text-center mb-12">
         <button
           onClick={() => navigate('/billing')}
-          className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-dark-text"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Billing
+          <ArrowLeft className="h-4 w-4" /> Back to Billing
         </button>
-        <h1 className="text-2xl font-bold text-dark-text">Choose Your Plan</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Select a plan that fits your practice. All plans include full AI-powered tooth
-          segmentation and treatment planning.
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-dark-text tracking-tight">
+          Simple, transparent pricing
+        </h1>
+        <p className="mt-4 text-[15px] text-slate-500 max-w-xl mx-auto leading-relaxed">
+          Choose the plan that fits your practice. All plans include AI-powered tooth segmentation,
+          treatment planning, and manufacturing support.
         </p>
-      </div>
+
+        {/* Billing toggle */}
+        <div className="mt-8 inline-flex items-center gap-1 rounded-full bg-slate-100 p-1">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={cn(
+              'rounded-full px-5 py-2 text-sm font-medium transition-all duration-200',
+              billingCycle === 'monthly' ? 'bg-white text-dark-text shadow-sm' : 'text-slate-500 hover:text-slate-700',
+            )}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingCycle('yearly')}
+            className={cn(
+              'rounded-full px-5 py-2 text-sm font-medium transition-all duration-200',
+              billingCycle === 'yearly' ? 'bg-white text-dark-text shadow-sm' : 'text-slate-500 hover:text-slate-700',
+            )}
+          >
+            Yearly <span className="ml-1 text-xs font-semibold text-emerald-600">Save 20%</span>
+          </button>
+        </div>
+      </motion.div>
 
       {/* Plan Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {displayPlans.map((plan) => {
-          const meta = PLAN_META[plan.slug] ?? { icon: Star, color: 'text-gray-600' };
+          const meta = PLAN_META[plan.slug] ?? { icon: Star, gradient: 'from-slate-500 to-slate-600', ring: 'ring-slate-200' };
           const Icon = meta.icon;
           const isPopular = meta.popular === true;
           const isCurrentPlan = stats?.plan_slug === plan.slug;
           const isPayPerCase = plan.slug === 'pay-per-case';
+          const price = billingCycle === 'yearly' && !isPayPerCase
+            ? Math.round(plan.monthly_fee_usd * 0.8)
+            : plan.monthly_fee_usd;
 
           return (
-            <div
+            <motion.div
               key={plan.id}
+              variants={fadeUp}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
               className={cn(
-                'relative flex flex-col rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md',
-                isPopular
-                  ? 'border-electric ring-2 ring-electric/20'
-                  : 'border-gray-200',
+                'relative flex flex-col rounded-2xl border bg-white shadow-card transition-all duration-300 hover:shadow-card-hover overflow-hidden',
+                isPopular ? 'border-violet-300 ring-2 ring-violet-100' : 'border-slate-200/60',
               )}
             >
-              {/* Popular Badge */}
+              {/* Popular ribbon */}
               {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge variant="blue" className="px-3 py-1 text-xs font-semibold shadow-sm">
-                    Most Popular
-                  </Badge>
+                <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2 text-center">
+                  <span className="text-[11px] font-bold text-white uppercase tracking-wider">Most Popular</span>
                 </div>
               )}
 
               <div className="flex flex-1 flex-col p-6">
-                {/* Plan Header */}
-                <div className="mb-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div
-                      className={cn(
-                        'flex h-9 w-9 items-center justify-center rounded-lg',
-                        isPopular ? 'bg-blue-100' : 'bg-gray-100',
-                      )}
-                    >
-                      <Icon className={cn('h-5 w-5', meta.color)} />
+                {/* Icon + Name */}
+                <div className="mb-5">
+                  <div className={cn('inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm mb-3', meta.gradient)}>
+                    <Icon className="h-5 w-5" strokeWidth={1.8} />
+                  </div>
+                  <h3 className="text-lg font-bold text-dark-text">{plan.name}</h3>
+                </div>
+
+                {/* Price */}
+                <div className="mb-5">
+                  {isPayPerCase ? (
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-extrabold text-dark-text">${plan.price_per_case_usd}</span>
+                      <span className="text-sm font-medium text-slate-500">/ case</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-dark-text">{plan.name}</h3>
-                  </div>
-
-                  {/* Price */}
-                  <div className="mb-1">
-                    {isPayPerCase ? (
-                      <div>
-                        <span className="text-3xl font-bold text-dark-text">
-                          ${plan.price_per_case_usd}
-                        </span>
-                        <span className="text-sm text-gray-500"> / case</span>
+                  ) : (
+                    <div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-extrabold text-dark-text">${price}</span>
+                        <span className="text-sm font-medium text-slate-500">/ mo</span>
                       </div>
-                    ) : (
-                      <div>
-                        <span className="text-3xl font-bold text-dark-text">
-                          ${plan.monthly_fee_usd}
-                        </span>
-                        <span className="text-sm text-gray-500"> / month</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {!isPayPerCase && (
-                    <p className="text-xs text-gray-500">
-                      {plan.included_cases_per_month} cases included &middot; ${plan.overage_per_case_usd}/case overage
-                    </p>
+                      <p className="mt-1.5 text-xs text-slate-400">
+                        {plan.included_cases_per_month} cases included
+                        <span className="mx-1.5 text-slate-300">&middot;</span>
+                        ${plan.overage_per_case_usd}/extra
+                      </p>
+                    </div>
                   )}
+                </div>
 
-                  <p className="mt-1 text-xs text-gray-400">
-                    {plan.turnaround_days}-day turnaround
-                  </p>
+                {/* Turnaround badge */}
+                <div className="mb-5 inline-flex items-center gap-1.5 self-start rounded-full bg-slate-50 border border-slate-200/60 px-3 py-1">
+                  <Clock className="h-3 w-3 text-slate-400" />
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {plan.turnaround_days === 1 ? 'Next-day' : `${plan.turnaround_days}-day`} turnaround
+                  </span>
                 </div>
 
                 {/* Features */}
-                <ul className="mb-6 flex-1 space-y-2.5">
+                <ul className="mb-6 flex-1 space-y-3">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
-                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-mint" />
-                      <span>{feature}</span>
+                    <li key={feature} className="flex items-start gap-2.5 text-[13px] text-slate-600">
+                      <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                        <Check className="h-2.5 w-2.5 text-emerald-600" strokeWidth={3} />
+                      </div>
+                      {feature}
                     </li>
                   ))}
                 </ul>
 
-                {/* CTA Button */}
+                {/* CTA */}
                 <div className="mt-auto">
                   {isCurrentPlan ? (
-                    <Button variant="outline" className="w-full" disabled>
+                    <Button variant="outline" className="w-full rounded-xl" disabled>
                       Current Plan
                     </Button>
                   ) : isPayPerCase ? (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => navigate('/cases/new')}
-                    >
-                      Get Started
+                    <Button variant="outline" className="w-full rounded-xl" onClick={() => navigate('/cases/new')}>
+                      Get Started <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Button>
                   ) : plan.slug === 'enterprise' ? (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => window.location.href = 'mailto:sales@dentaflow.ai'}
-                    >
+                    <Button variant="outline" className="w-full rounded-xl" onClick={() => window.location.href = 'mailto:sales@dentaflow.ai'}>
                       Contact Sales
                     </Button>
                   ) : (
                     <Button
-                      variant={isPopular ? 'primary' : 'outline'}
-                      className="w-full"
+                      variant={isPopular ? 'gradient' : 'primary'}
+                      className={cn('w-full rounded-xl', isPopular && 'shadow-button hover:shadow-glow-purple')}
                       loading={subscribeMutation.isPending && subscribeMutation.variables === plan.slug}
                       onClick={() => subscribeMutation.mutate(plan.slug)}
                     >
-                      Subscribe
+                      Subscribe <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Button>
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
-      {/* FAQ / Note */}
-      <div className="mt-10 rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-3 text-base font-semibold text-dark-text">Frequently Asked Questions</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-sm font-medium text-dark-text">What happens if I exceed my case limit?</p>
-            <p className="mt-1 text-sm text-gray-500">
-              Additional cases are billed at your plan's overage rate. You will never be blocked from
-              submitting cases.
-            </p>
+      {/* Trust section */}
+      <motion.div variants={fadeUp} className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          { icon: Sparkles, label: 'AI-Powered', desc: 'MeshSegNet deep learning' },
+          { icon: Shield, label: 'HIPAA Ready', desc: 'Enterprise-grade security' },
+          { icon: Headphones, label: 'Expert Support', desc: 'Dental professionals on staff' },
+          { icon: Clock, label: 'Fast Results', desc: 'Same-day processing available' },
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-3 rounded-xl bg-white border border-slate-200/60 p-4 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-50">
+              <item.icon className="h-5 w-5 text-slate-500" strokeWidth={1.8} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-dark-text">{item.label}</p>
+              <p className="text-[11px] text-slate-400">{item.desc}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-dark-text">Can I change plans at any time?</p>
-            <p className="mt-1 text-sm text-gray-500">
-              Yes. Upgrades take effect immediately with a prorated credit. Downgrades apply at the
-              end of your current billing period.
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-dark-text">How does billing work?</p>
-            <p className="mt-1 text-sm text-gray-500">
-              Subscriptions are billed monthly via Stripe. Pay-per-case charges are invoiced
-              upon case submission.
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-dark-text">Is there a free trial?</p>
-            <p className="mt-1 text-sm text-gray-500">
-              New accounts start on Pay Per Case with no commitment. Submit your first case to
-              experience the full AI pipeline.
-            </p>
-          </div>
+        ))}
+      </motion.div>
+
+      {/* FAQ */}
+      <motion.div variants={fadeUp} className="mt-12 rounded-2xl bg-white border border-slate-200/60 p-8 shadow-card">
+        <h2 className="text-lg font-bold text-dark-text mb-6 text-center">Frequently Asked Questions</h2>
+        <div className="grid gap-6 sm:grid-cols-2">
+          {[
+            { q: 'What happens if I exceed my case limit?', a: 'Additional cases are billed at your plan\'s overage rate. You\'re never blocked from submitting.' },
+            { q: 'Can I change plans at any time?', a: 'Yes. Upgrades take effect immediately with a prorated credit. Downgrades apply at the end of your billing period.' },
+            { q: 'How does billing work?', a: 'Subscriptions are billed monthly via Stripe. Pay-per-case charges are invoiced upon case submission.' },
+            { q: 'Is there a free trial?', a: 'New accounts start on Pay Per Case with no commitment. Submit your first case to experience the full AI pipeline.' },
+          ].map((faq) => (
+            <div key={faq.q}>
+              <p className="text-sm font-semibold text-dark-text mb-1.5">{faq.q}</p>
+              <p className="text-[13px] text-slate-500 leading-relaxed">{faq.a}</p>
+            </div>
+          ))}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

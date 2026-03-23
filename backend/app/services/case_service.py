@@ -129,12 +129,20 @@ class CaseService:
         return await self.repo.update(case)
 
     async def approve(self, case_id: uuid.UUID, user: User) -> Case:
-        """Dentist approves a case in review."""
+        """Dentist approves a case in review. Auto-creates manufacturing order."""
         case = await self.get(case_id, user)
         if case.status != CaseStatus.REVIEW.value:
             raise ValidationError("Case is not in review status")
         case.status = CaseStatus.APPROVED.value
-        return await self.repo.update(case)
+        case = await self.repo.update(case)
+        # Auto-create manufacturing order
+        try:
+            from app.services.manufacturing_service import ManufacturingService
+            mfg_svc = ManufacturingService(self.db)
+            await mfg_svc.auto_create_from_case(case)
+        except Exception:
+            pass  # Don't block approval if manufacturing order creation fails
+        return case
 
     async def request_revision(
         self, case_id: uuid.UUID, user: User, reason: str

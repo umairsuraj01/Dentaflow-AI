@@ -24,6 +24,8 @@ const Viewer3DTestPage = lazy(() => import('@/pages/Viewer3DTestPage').then(m =>
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const UsersPage = lazy(() => import('@/modules/admin').then(m => ({ default: m.UsersPage })));
 const TechniciansPage = lazy(() => import('@/modules/admin').then(m => ({ default: m.TechniciansPage })));
+const ManufacturingDashboardPage = lazy(() => import('@/modules/manufacturing').then(m => ({ default: m.ManufacturingDashboardPage })));
+const OrderDetailPage = lazy(() => import('@/modules/manufacturing').then(m => ({ default: m.OrderDetailPage })));
 
 export default function App() {
   return (
@@ -55,6 +57,8 @@ export default function App() {
             {/* AI page redirects to treatment planner (single workflow) */}
             <Route path="/cases/:id/ai" element={<Navigate to="../treatment" replace />} />
             <Route path="/cases/:id/treatment" element={<TreatmentViewer />} />
+            <Route path={ROUTES.MANUFACTURING} element={<ManufacturingDashboardPage />} />
+            <Route path="/manufacturing/:id" element={<OrderDetailPage />} />
             <Route path={ROUTES.BILLING} element={<BillingDashboardPage />} />
             <Route path="/billing/pricing" element={<PricingPage />} />
             <Route path={ROUTES.ADMIN} element={<AnalyticsPage />} />

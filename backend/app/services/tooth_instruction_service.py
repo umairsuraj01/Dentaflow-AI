@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.constants import CaseStatus
+from app.constants import CaseStatus, UserRole
 from app.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.models.tooth_instruction import ToothInstruction
 from app.models.user import User
@@ -74,7 +74,7 @@ class ToothInstructionService:
         instruction = await self.repo.get_by_id(instruction_id)
         if not instruction:
             raise NotFoundError("Tooth instruction")
-        if instruction.dentist_id != user.id:
+        if instruction.dentist_id != user.id and user.role != UserRole.SUPER_ADMIN.value:
             raise AuthorizationError("Not your instruction")
         for field, value in data.model_dump(exclude_unset=True).items():
             val = value.value if hasattr(value, "value") else value
@@ -89,7 +89,7 @@ class ToothInstructionService:
         instruction = await self.repo.get_by_id(instruction_id)
         if not instruction:
             raise NotFoundError("Tooth instruction")
-        if instruction.dentist_id != user.id:
+        if instruction.dentist_id != user.id and user.role != UserRole.SUPER_ADMIN.value:
             raise AuthorizationError("Not your instruction")
         await self.repo.delete(instruction)
 

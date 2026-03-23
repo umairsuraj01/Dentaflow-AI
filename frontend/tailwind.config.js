@@ -1,4 +1,4 @@
-// tailwind.config.js — Tailwind CSS configuration with DentaFlow design tokens.
+// tailwind.config.js — DentaFlow AI premium design system.
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -14,17 +14,32 @@ export default {
         'dark-text': '#1E293B',
         'glass-white': 'rgba(255, 255, 255, 0.8)',
         'glass-border': 'rgba(255, 255, 255, 0.18)',
+        brand: {
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#3B82F6',
+          600: '#2563EB',
+          700: '#1D4ED8',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.3)',
-        'glow-mint': '0 0 20px rgba(16, 185, 129, 0.3)',
-        'card': '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)',
-        'card-hover': '0 4px 16px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.04)',
-        'elevated': '0 8px 30px rgba(0,0,0,0.08)',
+        'glow-blue': '0 0 24px rgba(59, 130, 246, 0.35)',
+        'glow-mint': '0 0 24px rgba(16, 185, 129, 0.3)',
+        'glow-purple': '0 0 24px rgba(139, 92, 246, 0.3)',
+        'card': '0 1px 2px rgba(0,0,0,0.03), 0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.03)',
+        'card-hover': '0 4px 12px rgba(0,0,0,0.06), 0 12px 40px rgba(0,0,0,0.06)',
+        'elevated': '0 12px 40px -8px rgba(0,0,0,0.12)',
         'inner-glow': 'inset 0 1px 0 rgba(255,255,255,0.1)',
+        'input': '0 1px 2px rgba(0,0,0,0.04)',
+        'input-focus': '0 0 0 3px rgba(59,130,246,0.12), 0 1px 2px rgba(0,0,0,0.04)',
+        'button': '0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(59,130,246,0.15)',
+        'nav': '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -36,16 +51,19 @@ export default {
         '3xl': '1.5rem',
       },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.3s ease-out',
+        'fade-in': 'fadeIn 0.4s ease-out',
+        'slide-up': 'slideUp 0.4s ease-out',
         'slide-left': 'slideLeft 0.3s ease-out',
         'slide-right': 'slideRight 0.3s ease-out',
-        shake: 'shake 0.5s ease-in-out',
+        'shake': 'shake 0.5s ease-in-out',
         'float': 'float 6s ease-in-out infinite',
         'float-delayed': 'float 6s ease-in-out 3s infinite',
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'gradient-shift': 'gradientShift 8s ease infinite',
         'shimmer': 'shimmer 2s linear infinite',
+        'spin-slow': 'spin 3s linear infinite',
+        'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
+        'scale-in': 'scaleIn 0.2s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -53,7 +71,7 @@ export default {
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideLeft: {
@@ -80,6 +98,14 @@ export default {
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
+        },
+        bounceGentle: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-4px)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
         },
       },
     },
