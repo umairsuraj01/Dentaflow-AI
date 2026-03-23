@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Truck, Clock, FileText, Download, Play,
-  ChevronRight, Copy,
+  ChevronRight, Copy, Pencil, X as XIcon, Save,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
@@ -22,10 +22,17 @@ export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [shippingOpen, setShippingOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    trimline: '', aligner_material: '', attachment_template_material: '',
+    cutout_info: '', special_instructions: '',
+    total_trays: 0, upper_aligner_count: 0, lower_aligner_count: 0,
+    attachment_template_count: 0, attachment_start_stage: 1,
+  });
 
   const {
-    order, isLoading, moveToInProgress, markShipped,
-    isMoving, isShipping,
+    order, isLoading, moveToInProgress, markShipped, updateOrder,
+    isMoving, isShipping, isUpdating,
   } = useOrderDetail(id!);
 
   if (isLoading) {
@@ -42,6 +49,25 @@ export function OrderDetailPage() {
       </div>
     );
   }
+
+  const startEdit = () => {
+    if (!order) return;
+    setEditForm({
+      trimline: order.trimline, aligner_material: order.aligner_material,
+      attachment_template_material: order.attachment_template_material,
+      cutout_info: order.cutout_info || '', special_instructions: order.special_instructions || '',
+      total_trays: order.total_trays, upper_aligner_count: order.upper_aligner_count,
+      lower_aligner_count: order.lower_aligner_count,
+      attachment_template_count: order.attachment_template_count,
+      attachment_start_stage: order.attachment_start_stage ?? 1,
+    });
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    await updateOrder(editForm);
+    setEditing(false);
+  };
 
   const handleMoveToInProgress = async () => {
     await moveToInProgress();
@@ -104,6 +130,45 @@ export function OrderDetailPage() {
         </div>
       </div>
 
+      {/* Shipping Detail Banner (shipped orders) */}
+      {order.status === 'SHIPPED' && (
+        <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/60 p-5 shadow-sm">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
+              <Truck className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-emerald-900">Shipped Successfully</h3>
+              <p className="text-xs text-emerald-700 mt-0.5">
+                {order.shipping_carrier && <span className="font-semibold">{order.shipping_carrier}</span>}
+                {order.tracking_number && (
+                  <span className="ml-2">
+                    Tracking: <span className="font-mono font-semibold">{order.tracking_number}</span>
+                    <button onClick={() => copyToClipboard(order.tracking_number!)} className="ml-1 text-emerald-500 hover:text-emerald-700 inline-flex">
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] text-emerald-600 font-medium">Shipped on</p>
+              <p className="text-sm font-semibold text-emerald-900">{order.shipped_at ? formatDate(order.shipped_at) : '—'}</p>
+            </div>
+            {order.assigned_at && (
+              <div className="text-right">
+                <p className="text-[11px] text-emerald-600 font-medium">Processing time</p>
+                <p className="text-sm font-semibold text-emerald-900">
+                  {order.shipped_at && order.assigned_at
+                    ? `${Math.ceil((new Date(order.shipped_at).getTime() - new Date(order.assigned_at).getTime()) / (1000 * 60 * 60 * 24))} days`
+                    : '—'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Two-column layout */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left column (2/3) */}
@@ -135,39 +200,118 @@ export function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Case Information */}
+          {/* Case Information (view/edit) */}
           <div className="rounded-2xl bg-white border border-slate-200/60 shadow-card overflow-hidden">
-            <div className="border-b border-slate-100 px-6 py-4">
+            <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xs font-bold text-electric uppercase tracking-wider">Case Information</h2>
-            </div>
-            <div className="px-6 py-5 space-y-5">
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Trimline</p>
-                  <p className="text-sm font-semibold text-dark-text">{order.trimline}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Attachment Template Material</p>
-                  <p className="text-sm font-semibold text-dark-text">{order.attachment_template_material}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Aligner Material</p>
-                  <p className="text-sm font-semibold text-dark-text">{order.aligner_material}</p>
-                </div>
-              </div>
-              {order.cutout_info && (
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Cutout Information</p>
-                  <p className="text-sm text-dark-text">{order.cutout_info}</p>
+              {!editing && order.status !== 'SHIPPED' && (
+                <button onClick={startEdit} className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-electric transition-colors">
+                  <Pencil className="h-3.5 w-3.5" /> Edit
+                </button>
+              )}
+              {editing && (
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="gradient" onClick={saveEdit} loading={isUpdating}>
+                    <Save className="mr-1 h-3 w-3" /> Save
+                  </Button>
+                  <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-600">
+                    <XIcon className="h-4 w-4" />
+                  </button>
                 </div>
               )}
-              {order.special_instructions && (
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Special Instructions to Manufacturer</p>
-                  <p className="text-sm text-dark-text whitespace-pre-wrap bg-slate-50 rounded-xl p-4 border border-slate-100">
-                    {order.special_instructions}
-                  </p>
-                </div>
+            </div>
+            <div className="px-6 py-5 space-y-5">
+              {editing ? (
+                /* Edit mode */
+                <>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500">Trimline</label>
+                      <select value={editForm.trimline} onChange={(e) => setEditForm({ ...editForm, trimline: e.target.value })}
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10">
+                        <option value="Straight">Straight</option>
+                        <option value="Scalloped">Scalloped</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500">Attachment Template Material</label>
+                      <input type="text" value={editForm.attachment_template_material} onChange={(e) => setEditForm({ ...editForm, attachment_template_material: e.target.value })}
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10" />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500">Aligner Material</label>
+                      <input type="text" value={editForm.aligner_material} onChange={(e) => setEditForm({ ...editForm, aligner_material: e.target.value })}
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Cutout Information</label>
+                    <input type="text" value={editForm.cutout_info} onChange={(e) => setEditForm({ ...editForm, cutout_info: e.target.value })}
+                      placeholder="Optional" className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10" />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-500">Special Instructions</label>
+                    <textarea value={editForm.special_instructions} onChange={(e) => setEditForm({ ...editForm, special_instructions: e.target.value })}
+                      rows={4} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm resize-none focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      { label: 'Total Trays', key: 'total_trays' as const },
+                      { label: 'Upper Aligners', key: 'upper_aligner_count' as const },
+                      { label: 'Lower Aligners', key: 'lower_aligner_count' as const },
+                    ].map((f) => (
+                      <div key={f.key}>
+                        <label className="mb-1.5 block text-xs font-medium text-slate-500">{f.label}</label>
+                        <input type="number" min={0} value={editForm[f.key]} onChange={(e) => setEditForm({ ...editForm, [f.key]: parseInt(e.target.value) || 0 })}
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500">Attachment Templates</label>
+                      <input type="number" min={0} value={editForm.attachment_template_count} onChange={(e) => setEditForm({ ...editForm, attachment_template_count: parseInt(e.target.value) || 0 })}
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10" />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500">Attachment Start Stage</label>
+                      <input type="number" min={1} value={editForm.attachment_start_stage} onChange={(e) => setEditForm({ ...editForm, attachment_start_stage: parseInt(e.target.value) || 1 })}
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/10" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* View mode */
+                <>
+                  <div className="grid grid-cols-3 gap-6">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">Trimline</p>
+                      <p className="text-sm font-semibold text-dark-text">{order.trimline}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">Attachment Template Material</p>
+                      <p className="text-sm font-semibold text-dark-text">{order.attachment_template_material}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">Aligner Material</p>
+                      <p className="text-sm font-semibold text-dark-text">{order.aligner_material}</p>
+                    </div>
+                  </div>
+                  {order.cutout_info && (
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">Cutout Information</p>
+                      <p className="text-sm text-dark-text">{order.cutout_info}</p>
+                    </div>
+                  )}
+                  {order.special_instructions && (
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">Special Instructions to Manufacturer</p>
+                      <p className="text-sm text-dark-text whitespace-pre-wrap bg-slate-50 rounded-xl p-4 border border-slate-100">
+                        {order.special_instructions}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -277,7 +421,15 @@ export function OrderDetailPage() {
                   <FileText className="h-4 w-4 text-slate-400" />
                   <span className="text-sm font-medium text-dark-text">Device Certificate</span>
                 </div>
-                <Button size="sm" variant="outline" className="text-xs" onClick={() => window.print()}>
+                <Button size="sm" variant="outline" className="text-xs" onClick={async () => {
+                  const token = localStorage.getItem('access_token');
+                  const res = await fetch(`/api/v1/manufacturing/orders/${order.id}/certificate`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  const html = await res.text();
+                  const w = window.open('', '_blank');
+                  if (w) { w.document.write(html); w.document.close(); }
+                }}>
                   Print Materials
                 </Button>
               </div>
