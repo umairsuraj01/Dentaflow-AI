@@ -63,6 +63,11 @@ export function CaseDetailPage() {
           <div className="mt-1 flex items-center gap-2">
             <CaseStatusBadge status={caseData.status} />
             <CasePriorityBadge priority={caseData.priority} />
+            {caseData.managed_by_platform && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/10">
+                Managed by DentaFlow
+              </span>
+            )}
           </div>
         </div>
         {canEditRole && caseData.status === 'REVIEW' && (

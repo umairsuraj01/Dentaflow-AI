@@ -5,8 +5,10 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select, func as sa_func
+
 from app.constants import (
-    APP_CASE_PREFIX, CasePriority, CaseStatus,
+    APP_CASE_PREFIX, CasePriority, CaseStatus, InvoiceStatus, SubscriptionStatus,
     PRICE_NORMAL_USD, PRICE_RUSH_USD, PRICE_URGENT_USD,
     TURNAROUND_NORMAL_DAYS, TURNAROUND_RUSH_DAYS, TURNAROUND_URGENT_DAYS,
     UserRole,
@@ -14,6 +16,8 @@ from app.constants import (
 from app.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.models.case import Case
 from app.models.case_note import CaseNote
+from app.models.invoice import Invoice
+from app.models.subscription import Subscription
 from app.models.user import User
 from app.repositories.case_repository import (
     CaseNoteRepository, CaseRepository,
@@ -38,11 +42,38 @@ class CaseService:
     """Handles case creation, status transitions, and queries."""
 
     def __init__(self, db: AsyncSession) -> None:
+        self.db = db
         self.repo = CaseRepository(db)
         self.note_repo = CaseNoteRepository(db)
 
+    async def _check_billing_standing(self, user: User) -> None:
+        """Block case creation if org has overdue invoices."""
+        if user.role == UserRole.SUPER_ADMIN.value:
+            return  # Platform admin always allowed
+        if not user.org_id:
+            return  # No org = pay per case, always allowed
+
+        # Check for overdue invoices
+        result = await self.db.execute(
+            select(sa_func.count()).select_from(Invoice)
+            .where(
+                Invoice.dentist_id == user.id,
+                Invoice.status == InvoiceStatus.OVERDUE.value,
+            )
+        )
+        overdue_count = result.scalar_one()
+        if overdue_count > 0:
+            raise ValidationError(
+                f"Your account has {overdue_count} overdue invoice(s). "
+                "Please clear outstanding payments before creating new cases. "
+                "Go to Billing to view and pay invoices."
+            )
+
     async def create(self, data: CaseCreate, dentist: User) -> Case:
         """Create a new case with auto-generated case number."""
+        # Check billing standing before allowing case creation
+        await self._check_billing_standing(dentist)
+
         year = datetime.now(timezone.utc).year
         case_number = await self.repo.get_next_case_number(APP_CASE_PREFIX, year)
         price = PRIORITY_PRICE.get(data.priority.value, PRICE_NORMAL_USD)
@@ -104,7 +135,7 @@ class CaseService:
         return await self.repo.update(case)
 
     async def submit(self, case_id: uuid.UUID, user: User) -> Case:
-        """Submit a draft case for processing."""
+        """Submit a draft case for processing. Auto-assigns to DentaFlow team if org has no technicians."""
         case = await self.get(case_id, user)
         if case.status != CaseStatus.DRAFT.value:
             raise ValidationError("Case is not in draft status")
@@ -113,6 +144,22 @@ class CaseService:
         case.due_date = datetime.now(timezone.utc) + timedelta(
             days=case.target_turnaround_days
         )
+
+        # Check if org has technicians — if not, mark as platform-managed
+        if user.org_id:
+            tech_count = await self.db.execute(
+                select(sa_func.count()).select_from(User)
+                .where(
+                    User.org_id == user.org_id,
+                    User.role.in_([UserRole.TECHNICIAN.value, UserRole.LAB_MANAGER.value]),
+                    User.is_deleted == False,
+                    User.is_active == True,
+                )
+            )
+            has_technicians = tech_count.scalar_one() > 0
+            if not has_technicians:
+                case.managed_by_platform = True
+
         return await self.repo.update(case)
 
     async def assign(

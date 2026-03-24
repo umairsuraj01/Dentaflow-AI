@@ -52,6 +52,7 @@ export interface Case {
   due_date: string | null;
   submitted_at: string | null;
   completed_at: string | null;
+  managed_by_platform: boolean;
   created_at: string;
   updated_at: string;
   files: CaseFile[];

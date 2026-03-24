@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    DateTime, Float, ForeignKey, Integer, String, Text, func,
+    Boolean, DateTime, Float, ForeignKey, Integer, String, Text, func,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -55,6 +55,9 @@ class Case(Base):
     )
     submitted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    managed_by_platform: Mapped[bool] = mapped_column(
+        Boolean, default=False
     )
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

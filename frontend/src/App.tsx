@@ -27,6 +27,7 @@ const TechniciansPage = lazy(() => import('@/modules/admin').then(m => ({ defaul
 const ManufacturingDashboardPage = lazy(() => import('@/modules/manufacturing').then(m => ({ default: m.ManufacturingDashboardPage })));
 const OrderDetailPage = lazy(() => import('@/modules/manufacturing').then(m => ({ default: m.OrderDetailPage })));
 const OrgSettingsPage = lazy(() => import('@/modules/organizations').then(m => ({ default: m.OrgSettingsPage })));
+const DemoPage = lazy(() => import('@/pages/DemoPage').then(m => ({ default: m.DemoPage })));
 
 export default function App() {
   return (
@@ -35,6 +36,9 @@ export default function App() {
       <BrowserRouter>
         <Suspense fallback={<PageSkeleton />}>
         <Routes>
+          {/* Public routes (no auth) */}
+          <Route path="/demo" element={<DemoPage />} />
+
           {/* Auth routes */}
           <Route element={<AuthLayout />}>
             <Route path={ROUTES.LOGIN} element={<LoginPage />} />
