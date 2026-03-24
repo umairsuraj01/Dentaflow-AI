@@ -9,6 +9,7 @@ WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install --legacy-peer-deps
 COPY frontend/ ./
+ENV ROLLUP_NATIVE_DISABLE=1
 RUN npm run build
 
 # ─── Stage 2: Backend + Serve ──────────────────────────────────────────
