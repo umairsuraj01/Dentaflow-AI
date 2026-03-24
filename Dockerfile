@@ -1,14 +1,12 @@
-# DentaFlow AI — Docker build
-# Frontend is pre-built locally (dist/ folder), backend runs in container
+# DentaFlow AI — Docker build (Python 3.11 on Bookworm)
+# Frontend is pre-built locally (dist/ folder)
 
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
 # System deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 # Python deps — skip heavy AI/ML packages for production web server
 COPY backend/requirements.txt ./requirements.txt
@@ -24,11 +22,9 @@ COPY frontend/dist ./static
 # Create data directory for SQLite
 RUN mkdir -p /data
 
-# Environment defaults
 ENV DATABASE_URL="sqlite+aiosqlite:///./data/dentaflow.db"
 ENV PYTHONUNBUFFERED=1
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -sf http://localhost:8000/health || exit 1
 
