@@ -11,8 +11,8 @@ venv/
 
 # Node
 node_modules/
-dist/
 .vite/
+# frontend/dist is tracked — needed for Docker builds on server
 
 # IDE
 .vscode/

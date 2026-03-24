@@ -1,20 +1,6 @@
-# DentaFlow AI — Multi-stage Docker build
-# Stage 1: Build frontend
-# Stage 2: Production backend + serve frontend static files
+# DentaFlow AI — Docker build
+# Frontend is pre-built locally (dist/ folder), backend runs in container
 
-# ─── Stage 1: Frontend Build ───────────────────────────────────────────
-FROM node:20-alpine AS frontend-build
-
-WORKDIR /app/frontend
-COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install --legacy-peer-deps
-# Install WASM fallback for rollup native parser (crashes on some Linux)
-RUN npm install @rollup/wasm-node --legacy-peer-deps 2>/dev/null || true
-COPY frontend/ ./
-ENV ROLLUP_NATIVE_DISABLE=1
-RUN node --max-old-space-size=1024 ./node_modules/.bin/vite build
-
-# ─── Stage 2: Backend + Serve ──────────────────────────────────────────
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -32,21 +18,20 @@ RUN grep -v '^torch\|^trimesh\|^scipy\|^scikit-learn\|^vedo' requirements.txt > 
 # Copy backend code
 COPY backend/ ./
 
-# Copy built frontend to serve as static files
-COPY --from=frontend-build /app/frontend/dist ./static
+# Copy pre-built frontend
+COPY frontend/dist ./static
 
 # Create data directory for SQLite
 RUN mkdir -p /data
 
-# Environment defaults (override via docker .env)
+# Environment defaults
 ENV DATABASE_URL="sqlite+aiosqlite:///./data/dentaflow.db"
 ENV PYTHONUNBUFFERED=1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -sf http://localhost:8000/api/v1/auth/health || exit 1
+    CMD curl -sf http://localhost:8000/health || exit 1
 
 EXPOSE 8000
 
-# Start with uvicorn
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
