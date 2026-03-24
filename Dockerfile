@@ -7,7 +7,7 @@ FROM node:20-alpine AS frontend-build
 
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci --silent
+RUN npm install --legacy-peer-deps
 COPY frontend/ ./
 RUN npm run build
 
@@ -21,10 +21,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Python deps (no torch in production — use CPU-only or skip AI for now)
+# Python deps — skip heavy AI/ML packages for production web server
 COPY backend/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt || \
-    pip install --no-cache-dir $(grep -v '^torch\|^trimesh\|^scipy\|^scikit-learn' requirements.txt)
+RUN grep -v '^torch\|^trimesh\|^scipy\|^scikit-learn\|^vedo' requirements.txt > requirements-prod.txt && \
+    pip install --no-cache-dir -r requirements-prod.txt
 
 # Copy backend code
 COPY backend/ ./
