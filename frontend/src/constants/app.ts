@@ -3,10 +3,14 @@
 export const APP_NAME = 'DentaFlow AI';
 export const APP_TAGLINE = 'AI-Powered Dental Treatment Planning';
 export const APP_VERSION = '1.0.0';
-export const APP_DOMAIN = 'dentaflow.ai';
-export const APP_SUPPORT_EMAIL = `support@${APP_DOMAIN}`;
+export const APP_DOMAIN = 'dentaflow.efficientbuy.com';
+export const APP_SUPPORT_EMAIL = 'support@dentaflow.efficientbuy.com';
+export const APP_WEBSITE = `https://${APP_DOMAIN}`;
 export const APP_CASE_PREFIX = 'DF';
 export const APP_INVOICE_PREFIX = 'INV';
+
+// Crisp Chat — replace with your Crisp website ID after signup at crisp.chat
+export const CRISP_WEBSITE_ID = '';
 
 export const COLORS = {
   navy: '#0F172A',

@@ -10,6 +10,7 @@ import {
 import { APP_NAME, ROUTES } from '@/constants';
 import { useAuth, useAuthStore, UserAvatar } from '@/modules/auth';
 import { NotificationBell } from '@/modules/notifications';
+import { Footer } from '@/components/ui/Footer';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -283,9 +284,10 @@ export function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="p-4 lg:p-8 max-w-[1400px] mx-auto">
+          <div className="p-4 lg:p-8 max-w-[1400px] mx-auto min-h-[calc(100vh-10rem)]">
             <Outlet />
           </div>
+          <Footer />
         </main>
       </div>
     </div>

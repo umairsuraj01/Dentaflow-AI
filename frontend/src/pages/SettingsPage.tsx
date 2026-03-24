@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Shield, Bell, Palette, Loader2, CheckCircle, Sun, Moon, Monitor, Settings } from 'lucide-react';
+import { User, Shield, Bell, Palette, Loader2, CheckCircle, Sun, Moon, Monitor, Settings, Mail, ExternalLink } from 'lucide-react';
 import { useAuthStore, authService } from '@/modules/auth';
+import { APP_SUPPORT_EMAIL } from '@/constants';
 
 const COUNTRIES = [
   '', 'Afghanistan', 'Albania', 'Algeria', 'Argentina', 'Australia', 'Austria',
@@ -426,6 +427,26 @@ function PreferencesTab() {
             </motion.p>
           )}
         </div>
+      </div>
+      {/* Support */}
+      <div className="rounded-2xl bg-white p-8 shadow-card border border-slate-200/60">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100">
+            <Mail className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-dark-text tracking-tight">Need Help?</h2>
+            <p className="text-sm text-slate-400">Contact our support team</p>
+          </div>
+        </div>
+        <a
+          href={`mailto:${APP_SUPPORT_EMAIL}`}
+          className="inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200/60 px-5 py-3 text-sm font-medium text-dark-text hover:bg-slate-100 hover:border-slate-300 transition-all duration-200"
+        >
+          <Mail className="h-4 w-4 text-slate-500" />
+          {APP_SUPPORT_EMAIL}
+          <ExternalLink className="h-3 w-3 text-slate-400" />
+        </a>
       </div>
     </div>
   );

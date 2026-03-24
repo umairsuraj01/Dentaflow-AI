@@ -343,10 +343,14 @@ export function LoginPage() {
             </Link>
           </p>
 
-          {/* Footer note */}
-          <p className="mt-10 text-center text-xs text-gray-400">
-            Your data is protected with enterprise-grade security
-          </p>
+          {/* Footer links */}
+          <div className="mt-10 flex items-center justify-center gap-3 text-xs text-gray-400">
+            <Link to="/terms" className="hover:text-gray-600 transition-colors">Terms</Link>
+            <span className="text-gray-300">&middot;</span>
+            <Link to="/privacy" className="hover:text-gray-600 transition-colors">Privacy</Link>
+            <span className="text-gray-300">&middot;</span>
+            <Link to="/demo" className="hover:text-gray-600 transition-colors">Demo</Link>
+          </div>
         </motion.div>
       </div>
     </div>

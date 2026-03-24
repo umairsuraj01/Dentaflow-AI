@@ -10,6 +10,7 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { AppLayout } from '@/layouts/AppLayout';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { CrispChat } from '@/components/chat/CrispChat';
 
 // Lazy-loaded page components — code-split per route.
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -28,16 +29,21 @@ const ManufacturingDashboardPage = lazy(() => import('@/modules/manufacturing').
 const OrderDetailPage = lazy(() => import('@/modules/manufacturing').then(m => ({ default: m.OrderDetailPage })));
 const OrgSettingsPage = lazy(() => import('@/modules/organizations').then(m => ({ default: m.OrgSettingsPage })));
 const DemoPage = lazy(() => import('@/pages/DemoPage').then(m => ({ default: m.DemoPage })));
+const TermsPage = lazy(() => import('@/pages/TermsPage').then(m => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <InstallPrompt />
+      <CrispChat />
       <BrowserRouter>
         <Suspense fallback={<PageSkeleton />}>
         <Routes>
           {/* Public routes (no auth) */}
           <Route path="/demo" element={<DemoPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
 
           {/* Auth routes */}
           <Route element={<AuthLayout />}>
