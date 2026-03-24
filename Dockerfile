@@ -8,9 +8,11 @@ FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install --legacy-peer-deps
+# Install WASM fallback for rollup native parser (crashes on some Linux)
+RUN npm install @rollup/wasm-node --legacy-peer-deps 2>/dev/null || true
 COPY frontend/ ./
 ENV ROLLUP_NATIVE_DISABLE=1
-RUN npm run build
+RUN node --max-old-space-size=1024 ./node_modules/.bin/vite build
 
 # ─── Stage 2: Backend + Serve ──────────────────────────────────────────
 FROM python:3.11-slim
