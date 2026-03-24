@@ -38,7 +38,7 @@ class AuthService:
         self.repo = UserRepository(db)
 
     async def register(self, data: RegisterRequest) -> User:
-        """Create a new user account."""
+        """Create a new user account and assign to organization."""
         existing = await self.repo.get_by_email(data.email)
         if existing:
             raise ConflictError("Email already registered")
@@ -54,7 +54,24 @@ class AuthService:
             country=data.country,
             timezone=data.timezone,
         )
-        return await self.repo.create(user)
+        user = await self.repo.create(user)
+
+        # Organization assignment
+        from app.services.organization_service import OrganizationService
+        org_svc = OrganizationService(self.repo.db)
+        try:
+            if data.invite_token:
+                await org_svc.accept_invite(data.invite_token, user)
+            elif data.org_name:
+                await org_svc.create_org(data.org_name, user)
+            else:
+                # Auto-create personal org
+                org_name = data.clinic_name or f"{data.full_name}'s Practice"
+                await org_svc.create_org(org_name, user)
+        except Exception:
+            pass  # Don't block registration if org creation fails
+
+        return user
 
     async def login(
         self, email: str, password: str

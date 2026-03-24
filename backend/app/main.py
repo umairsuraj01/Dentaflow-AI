@@ -3,9 +3,13 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1 import api_router
 from app.config import get_settings
@@ -91,6 +95,19 @@ def _add_routes(app: FastAPI) -> None:
     async def health_check() -> dict[str, str]:
         """Return service health status."""
         return {"status": "healthy", "app": APP_NAME}
+
+    # Serve frontend static files in production (Docker build copies to ./static)
+    static_dir = Path(__file__).parent.parent / "static"
+    if static_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str) -> FileResponse:
+            """Serve the SPA index.html for all non-API routes."""
+            file_path = static_dir / full_path
+            if file_path.is_file():
+                return FileResponse(str(file_path))
+            return FileResponse(str(static_dir / "index.html"))
 
 
 app = create_app()

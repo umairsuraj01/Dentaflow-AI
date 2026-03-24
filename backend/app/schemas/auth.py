@@ -28,6 +28,8 @@ class RegisterRequest(BaseModel):
     experience_years: int | None = None
     country: str | None = None
     timezone: str | None = None
+    org_name: str | None = None         # If set, create new org during registration
+    invite_token: str | None = None     # If set, join existing org via invite
 
     @field_validator("password")
     @classmethod
@@ -72,6 +74,9 @@ class UserResponse(BaseModel):
     country: str | None = None
     timezone: str | None = None
     profile_picture_url: str | None = None
+    org_id: uuid.UUID | None = None
+    org_name: str | None = None
+    org_slug: str | None = None
     created_at: datetime
     last_login_at: datetime | None = None
 

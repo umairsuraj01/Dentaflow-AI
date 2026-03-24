@@ -20,7 +20,7 @@ import { PASSWORD_RULES } from '../constants/auth.constants';
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 const TOTAL_STEPS = 3;
-const STEP_LABELS = ['Account Type', 'Your Details', 'Practice Info'];
+const STEP_LABELS = ['Account Type', 'Your Details', 'Organization'];
 
 const ROLE_OPTIONS = [
   {
@@ -84,6 +84,8 @@ export function RegisterPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [serverError, setServerError] = useState('');
 
+  const [orgMode, setOrgMode] = useState<'create' | 'join'>('create');
+
   const form = useAuthForm({
     full_name: '',
     email: '',
@@ -93,6 +95,8 @@ export function RegisterPage() {
     country: '',
     specialization: '',
     experience_years: '',
+    org_name: '',
+    invite_token: '',
   });
 
   const nextStep = useCallback(() => {
@@ -138,6 +142,8 @@ export function RegisterPage() {
         experience_years: form.values.experience_years
           ? Number(form.values.experience_years)
           : undefined,
+        org_name: orgMode === 'create' ? (form.values.org_name as string) || undefined : undefined,
+        invite_token: orgMode === 'join' ? (form.values.invite_token as string) || undefined : undefined,
       });
       navigate(ROUTES.LOGIN, { state: { registered: true } });
     } catch (err: unknown) {
@@ -544,19 +550,52 @@ export function RegisterPage() {
                     transition={{ duration: 0.25 }}
                   >
                     <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">
-                      {selectedRole === 'DENTIST' ? 'Practice details' : 'Professional details'}
+                      Organization
                     </h2>
-                    <p className="mt-1 mb-6 text-sm text-gray-500">Almost there! Just a few more details</p>
+                    <p className="mt-1 mb-6 text-sm text-gray-500">Create a new organization or join an existing one</p>
+
+                    {/* Org mode toggle */}
+                    <div className="flex gap-1 rounded-xl bg-gray-100 p-1 mb-5">
+                      <button
+                        type="button"
+                        onClick={() => setOrgMode('create')}
+                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                          orgMode === 'create' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <Building className="inline mr-1.5 h-4 w-4" />
+                        Create New
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOrgMode('join')}
+                        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                          orgMode === 'join' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <Mail className="inline mr-1.5 h-4 w-4" />
+                        Join via Invite
+                      </button>
+                    </div>
+
                     <div className="space-y-4">
-                      {selectedRole === 'DENTIST' ? (
+                      {orgMode === 'create' ? (
                         <>
                           <Input
-                            label="Clinic Name"
-                            placeholder="Smile Dental Clinic"
+                            label="Organization Name"
+                            placeholder="e.g. Smile Dental Lab"
                             icon={<Building className="h-4 w-4" />}
-                            value={form.values.clinic_name as string}
-                            onChange={(e) => form.setValue('clinic_name', e.target.value)}
+                            value={form.values.org_name as string}
+                            onChange={(e) => form.setValue('org_name', e.target.value)}
                           />
+                          {selectedRole === 'DENTIST' && (
+                            <Input
+                              label="Clinic Name (optional)"
+                              placeholder="Your clinic name"
+                              value={form.values.clinic_name as string}
+                              onChange={(e) => form.setValue('clinic_name', e.target.value)}
+                            />
+                          )}
                           <Input
                             label="Country"
                             placeholder="United States"
@@ -568,19 +607,15 @@ export function RegisterPage() {
                       ) : (
                         <>
                           <Input
-                            label="Specialization"
-                            placeholder="e.g. Orthodontic Design"
-                            icon={<Wrench className="h-4 w-4" />}
-                            value={form.values.specialization as string}
-                            onChange={(e) => form.setValue('specialization', e.target.value)}
+                            label="Invite Token"
+                            placeholder="Paste the invite token from your admin"
+                            icon={<Mail className="h-4 w-4" />}
+                            value={form.values.invite_token as string}
+                            onChange={(e) => form.setValue('invite_token', e.target.value)}
                           />
-                          <Input
-                            label="Years of Experience"
-                            type="number"
-                            placeholder="5"
-                            value={form.values.experience_years as string}
-                            onChange={(e) => form.setValue('experience_years', e.target.value)}
-                          />
+                          <p className="text-xs text-gray-400">
+                            Ask your organization admin for an invite token. You'll automatically join their team.
+                          </p>
                         </>
                       )}
                     </div>

@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Eye, EyeOff, Mail, Lock, Brain, Shield, Zap,
-  ArrowRight, Activity,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -202,26 +202,18 @@ export function LoginPage() {
             </div>
           </div>
 
-          {/* Trust strip */}
-          <motion.div variants={fadeUp} className="flex items-center gap-4">
-            <div className="flex -space-x-2.5">
-              {[
-                { bg: 'bg-blue-600', initials: 'JD' },
-                { bg: 'bg-emerald-600', initials: 'SK' },
-                { bg: 'bg-violet-600', initials: 'MR' },
-                { bg: 'bg-amber-600', initials: 'AL' },
-              ].map((a, i) => (
-                <div
-                  key={i}
-                  className={`h-8 w-8 rounded-full ${a.bg} ring-2 ring-[#0F172A] flex items-center justify-center text-[10px] font-bold text-white`}
-                >
-                  {a.initials}
-                </div>
-              ))}
-            </div>
-            <div className="text-sm text-slate-500">
-              Trusted by <strong className="text-white font-semibold">2,500+</strong> dental professionals
-            </div>
+          {/* Trust badges */}
+          <motion.div variants={fadeUp} className="flex items-center gap-3">
+            {[
+              { label: 'Your data is safe', icon: Shield },
+              { label: 'Fast & reliable', icon: Zap },
+              { label: 'AI-Powered', icon: Brain },
+            ].map((badge) => (
+              <div key={badge.label} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur-sm">
+                <badge.icon className="h-3 w-3 text-slate-500" />
+                <span className="text-[11px] font-medium text-slate-400">{badge.label}</span>
+              </div>
+            ))}
           </motion.div>
         </motion.div>
       </div>
@@ -351,22 +343,10 @@ export function LoginPage() {
             </Link>
           </p>
 
-          {/* Rating badge */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-10 flex items-center justify-center gap-2.5 text-xs text-gray-400"
-          >
-            <div className="flex gap-0.5">
-              {Array.from({ length: 5 }, (_, i) => (
-                <Activity key={i} className="h-3 w-3 text-[#3B82F6]/60" />
-              ))}
-            </div>
-            <span className="font-semibold text-gray-500">4.9/5</span>
-            <span className="text-gray-300">|</span>
-            <span>500+ reviews</span>
-          </motion.div>
+          {/* Footer note */}
+          <p className="mt-10 text-center text-xs text-gray-400">
+            Your data is protected with enterprise-grade security
+          </p>
         </motion.div>
       </div>
     </div>

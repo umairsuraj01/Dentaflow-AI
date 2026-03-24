@@ -5,7 +5,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain, LayoutDashboard, FolderOpen, Factory, CreditCard, Users,
-  Settings, Search, Menu, X, LogOut, ChevronDown,
+  Settings, Search, Menu, X, LogOut, ChevronDown, Building2,
 } from 'lucide-react';
 import { APP_NAME, ROUTES } from '@/constants';
 import { useAuth, useAuthStore, UserAvatar } from '@/modules/auth';
@@ -25,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Cases', icon: FolderOpen, path: ROUTES.CASES, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
   { label: 'Manufacturing', icon: Factory, path: ROUTES.MANUFACTURING, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
   { label: 'Billing', icon: CreditCard, path: ROUTES.BILLING, roles: ['SUPER_ADMIN', 'DENTIST'] },
+  { label: 'Organization', icon: Building2, path: ROUTES.ORG_SETTINGS, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
   { label: 'Admin', icon: Users, path: ROUTES.ADMIN, roles: ['SUPER_ADMIN', 'LAB_MANAGER'] },
   { label: 'Settings', icon: Settings, path: '/settings', roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
 ];

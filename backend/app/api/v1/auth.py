@@ -97,13 +97,20 @@ async def logout(response: Response) -> ApiResponse[None]:
 @router.get("/me", response_model=ApiResponse[UserResponse])
 async def get_me(
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[UserResponse]:
-    """Return current user profile."""
-    return ApiResponse(
-        success=True,
-        message="User profile",
-        data=UserResponse.model_validate(current_user),
-    )
+    """Return current user profile with org info."""
+    resp = UserResponse.model_validate(current_user)
+    if current_user.org_id:
+        from app.services.organization_service import OrganizationService
+        org_svc = OrganizationService(db)
+        try:
+            org = await org_svc.get_org(current_user.org_id)
+            resp.org_name = org.name
+            resp.org_slug = org.slug
+        except Exception:
+            pass
+    return ApiResponse(success=True, message="User profile", data=resp)
 
 
 @router.put("/me", response_model=ApiResponse[UserResponse])

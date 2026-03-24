@@ -273,3 +273,23 @@ class ReplacementReason(str, Enum):
     DEFECTIVE = "DEFECTIVE"
     MISSING = "MISSING"
     OTHER = "OTHER"
+
+
+# -- Organizations --------------------------------------------------------
+
+class InviteStatus(str, Enum):
+    """Organization invite lifecycle."""
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    EXPIRED = "EXPIRED"
+    REVOKED = "REVOKED"
+
+
+class OrgPlanTier(str, Enum):
+    """Organization subscription tier."""
+
+    FREE = "free"
+    STARTER = "starter"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"

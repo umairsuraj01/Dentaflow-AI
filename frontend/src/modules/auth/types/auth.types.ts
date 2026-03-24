@@ -15,6 +15,9 @@ export interface User {
   country: string | null;
   timezone: string | null;
   profile_picture_url: string | null;
+  org_id: string | null;
+  org_name: string | null;
+  org_slug: string | null;
   created_at: string;
   last_login_at: string | null;
 }
@@ -34,6 +37,8 @@ export interface RegisterRequest {
   experience_years?: number;
   country?: string;
   timezone?: string;
+  org_name?: string;
+  invite_token?: string;
 }
 
 export interface AuthTokens {

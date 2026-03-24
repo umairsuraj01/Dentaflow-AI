@@ -39,5 +39,11 @@ frontend/public/samples/
 postgres_data/
 redis_data/
 
+# SSH keys (deployment)
+.ssh/
+
+# Production env (contains secrets)
+.env.production
+
 # Claude
 .claude/

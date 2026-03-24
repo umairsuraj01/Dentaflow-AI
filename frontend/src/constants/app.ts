@@ -74,5 +74,6 @@ export const ROUTES = {
   AI_PROCESSING: (caseId: string, fileId: string) => `/cases/${caseId}/ai?fileId=${fileId}`,
   BILLING: '/billing',
   MANUFACTURING: '/manufacturing',
+  ORG_SETTINGS: '/settings/organization',
   ADMIN: '/admin',
 } as const;

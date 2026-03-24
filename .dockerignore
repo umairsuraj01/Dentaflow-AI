@@ -1,0 +1,14 @@
+.git
+.ssh
+node_modules
+__pycache__
+*.pyc
+.venv
+*.db
+.env*
+dist
+frontend/node_modules
+backend/__pycache__
+backend/*.db
+backend/ai/checkpoints/*.pt
+.claude
