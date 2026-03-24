@@ -48,6 +48,7 @@ class AuthService:
             password_hash=password_hash,
             full_name=data.full_name,
             role=data.role.value,
+            is_verified=True,  # Auto-verify (email verification not set up yet)
             clinic_name=data.clinic_name,
             specialization=data.specialization,
             experience_years=data.experience_years,
