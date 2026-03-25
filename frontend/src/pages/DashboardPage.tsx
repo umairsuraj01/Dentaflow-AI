@@ -135,8 +135,8 @@ export function DashboardPage() {
       roles: ['DENTIST', 'SUPER_ADMIN', 'TECHNICIAN', 'LAB_MANAGER'],
     },
     {
-      label: 'AI Segmentation',
-      desc: 'Run AI tooth segmentation on uploaded scans',
+      label: 'AI Processing',
+      desc: 'Run AI analysis on uploaded dental scans',
       icon: Sparkles,
       path: ROUTES.CASES,
       gradient: 'from-violet-600 to-purple-500',

@@ -21,36 +21,36 @@ const stagger = {
 const FEATURES = [
   {
     icon: Brain,
-    title: 'AI Tooth Segmentation',
-    desc: 'Upload an STL scan and our AI identifies and separates every tooth in seconds with clinical accuracy.',
+    title: 'AI Tooth Detection',
+    desc: 'Upload a dental scan and our AI identifies and separates every tooth in seconds with clinical accuracy.',
     gradient: 'from-blue-500 to-cyan-500',
   },
   {
     icon: BarChart3,
-    title: 'Treatment Planning',
-    desc: 'Automatic staging, attachment planning, IPR simulation, and collision detection — all AI-powered.',
+    title: 'Smart Treatment Planning',
+    desc: 'Automatic aligner staging, attachment planning, and movement simulation — all powered by AI.',
     gradient: 'from-violet-500 to-purple-500',
   },
   {
     icon: Sparkles,
     title: 'Manufacturing Ready',
-    desc: 'Export STL files per stage, generate manufacturing sheets, and track production orders.',
+    desc: 'Generate manufacturing sheets, track production orders, and manage delivery — all in one place.',
     gradient: 'from-emerald-500 to-teal-500',
   },
   {
     icon: Users,
     title: 'Team Collaboration',
-    desc: 'Dentists upload cases, technicians process them, lab managers oversee production — all in one platform.',
+    desc: 'Dentists upload cases, your team processes them, managers oversee production — all in one platform.',
     gradient: 'from-amber-500 to-orange-500',
   },
 ];
 
 const WORKFLOW_STEPS = [
-  { step: '01', title: 'Upload STL Scan', desc: 'Doctor uploads the patient\'s intraoral scan' },
-  { step: '02', title: 'AI Segmentation', desc: 'MeshSegNet identifies and labels every tooth' },
-  { step: '03', title: 'Treatment Plan', desc: 'AI generates staging, attachments, and movements' },
-  { step: '04', title: 'Manufacturing', desc: 'Export STLs and track aligner production' },
-  { step: '05', title: 'Delivery', desc: 'Ship aligners to the dental practice' },
+  { step: '01', title: 'Upload Scan', desc: 'Doctor uploads the patient\'s dental scan' },
+  { step: '02', title: 'AI Analysis', desc: 'Our AI identifies and maps every tooth automatically' },
+  { step: '03', title: 'Treatment Plan', desc: 'AI creates the full aligner treatment plan' },
+  { step: '04', title: 'Manufacturing', desc: 'We produce your aligners and track the order' },
+  { step: '05', title: 'Delivery', desc: 'Aligners shipped directly to your practice' },
 ];
 
 export function DemoPage() {
@@ -133,7 +133,7 @@ export function DemoPage() {
                   <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" ... /> */}
             </div>
             <p className="mt-3 text-xs text-slate-500 text-center">
-              See the full workflow: scan upload → AI segmentation → treatment plan → manufacturing
+              See the full workflow: scan upload → AI analysis → treatment plan → manufacturing
             </p>
           </motion.div>
         </div>

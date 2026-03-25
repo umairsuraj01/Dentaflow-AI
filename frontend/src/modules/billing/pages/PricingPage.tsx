@@ -25,25 +25,25 @@ const FALLBACK_PLANS: PricingPlan[] = [
   {
     id: 'f-1', name: 'Pay Per Case', slug: 'pay-per-case',
     monthly_fee_usd: 0, price_per_case_usd: 35, included_cases_per_month: 0, overage_per_case_usd: 35,
-    features: ['No monthly commitment', 'Full AI segmentation', 'Treatment planning', 'STL export', 'Email support'],
+    features: ['No monthly commitment', 'Full AI analysis', 'Treatment planning', 'File export', 'Email support'],
     turnaround_days: 5, sort_order: 0,
   },
   {
     id: 'f-2', name: 'Starter', slug: 'starter',
     monthly_fee_usd: 199, price_per_case_usd: null, included_cases_per_month: 10, overage_per_case_usd: 25,
-    features: ['10 cases / month included', 'Full AI segmentation', 'Treatment planning', 'STL export', 'Priority support', '3-day turnaround'],
+    features: ['10 cases / month included', 'Full AI analysis', 'Treatment planning', 'File export', 'Priority support', '3-day turnaround'],
     turnaround_days: 3, sort_order: 1,
   },
   {
     id: 'f-3', name: 'Professional', slug: 'professional',
     monthly_fee_usd: 399, price_per_case_usd: null, included_cases_per_month: 25, overage_per_case_usd: 20,
-    features: ['25 cases / month included', 'Full AI segmentation', 'Advanced treatment planning', 'STL export & staging', 'Phone & email support', '2-day turnaround', 'Clinical summary reports'],
+    features: ['25 cases / month included', 'Full AI analysis', 'Advanced treatment planning', 'File export & staging', 'Phone & email support', '2-day turnaround', 'Clinical summary reports'],
     turnaround_days: 2, sort_order: 2,
   },
   {
     id: 'f-4', name: 'Enterprise', slug: 'enterprise',
     monthly_fee_usd: 799, price_per_case_usd: null, included_cases_per_month: 75, overage_per_case_usd: 15,
-    features: ['75 cases / month included', 'Full AI segmentation', 'Advanced treatment planning', 'STL export & staging', 'Dedicated account manager', '1-day turnaround', 'Clinical reports', 'API access', 'Custom integrations'],
+    features: ['75 cases / month included', 'Full AI analysis', 'Advanced treatment planning', 'File export & staging', 'Dedicated account manager', '1-day turnaround', 'Clinical reports', 'API access', 'Custom integrations'],
     turnaround_days: 1, sort_order: 3,
   },
 ];
@@ -81,7 +81,7 @@ export function PricingPage() {
           Simple, transparent pricing
         </h1>
         <p className="mt-4 text-[15px] text-slate-500 max-w-xl mx-auto leading-relaxed">
-          Choose the plan that fits your practice. All plans include AI-powered tooth segmentation,
+          Choose the plan that fits your practice. All plans include AI-powered tooth analysis,
           treatment planning, and manufacturing support.
         </p>
 
@@ -222,7 +222,7 @@ export function PricingPage() {
       {/* Trust section */}
       <motion.div variants={fadeUp} className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { icon: Sparkles, label: 'AI-Powered', desc: 'MeshSegNet deep learning' },
+          { icon: Sparkles, label: 'AI-Powered', desc: 'Advanced dental AI technology' },
           { icon: Shield, label: 'HIPAA Ready', desc: 'Enterprise-grade security' },
           { icon: Headphones, label: 'Expert Support', desc: 'Dental professionals on staff' },
           { icon: Clock, label: 'Fast Results', desc: 'Same-day processing available' },

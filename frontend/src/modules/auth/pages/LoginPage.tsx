@@ -19,7 +19,7 @@ import { useAuthForm } from '../hooks/useAuthForm';
 const FEATURES = [
   {
     icon: Brain,
-    title: 'AI-Powered Segmentation',
+    title: 'AI-Powered Analysis',
     desc: 'Deep learning models segment teeth in seconds with clinical accuracy.',
     gradient: 'from-blue-500/20 to-cyan-500/20',
     iconColor: 'text-cyan-400',
