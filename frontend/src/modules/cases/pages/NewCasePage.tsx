@@ -61,6 +61,21 @@ export function NewCasePage() {
   const [complaint, setComplaint] = useState('');
   const [goals, setGoals] = useState('');
   const [specialInst, _setSpecialInst] = useState('');
+  const [patientType, _setPatientType] = useState('ADULT');
+  const [retainerPref, _setRetainerPref] = useState('');
+  const [passiveAligners, _setPassiveAligners] = useState('');
+  const [alignerShipment, _setAlignerShipment] = useState('ALL_AT_ONCE');
+  const [rescanAfterIpr, _setRescanAfterIpr] = useState(false);
+
+  // Treatment instructions state
+  const [txInstructions, setTxInstructions] = useState({
+    midline_instruction: '', overjet_instruction: '', overbite_instruction: '',
+    crossbite_instruction: '', right_canine_class: '', left_canine_class: '',
+    right_molar_class: '', left_molar_class: '', ipr_preference: '',
+    proclination_preference: '', expansion_preference: '', extraction_preference: '',
+    ipr_prescription: '', auxiliary_type: '',
+  });
+  void setTxInstructions; // used in submit via spread
 
   // Step 3 state
   const [caseId, _setCaseId] = useState<string | undefined>();
@@ -91,6 +106,14 @@ export function NewCasePage() {
         chief_complaint: complaint || undefined,
         treatment_goals: goals || undefined,
         special_instructions: specialInst || undefined,
+        patient_type: patientType || undefined,
+        retainer_preference: retainerPref || undefined,
+        passive_aligners: passiveAligners || undefined,
+        aligner_shipment: alignerShipment || undefined,
+        rescan_after_ipr: rescanAfterIpr,
+        ...Object.fromEntries(
+          Object.entries(txInstructions).filter(([_, v]) => v)
+        ),
       });
       await submitCase(c.id);
       navigate(ROUTES.CASE_DETAIL(c.id));

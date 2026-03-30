@@ -16,6 +16,9 @@ from app.api.v1.notifications import router as notifications_router
 from app.api.v1.admin import router as admin_api_router
 from app.api.v1.manufacturing import router as manufacturing_router
 from app.api.v1.organizations import router as organizations_router
+from app.api.v1.clinical_preferences import router as clinical_prefs_router
+from app.api.v1.support import router as support_router
+from app.api.v1.loyalty import router as loyalty_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
@@ -32,3 +35,6 @@ api_router.include_router(notifications_router)
 api_router.include_router(admin_api_router)
 api_router.include_router(manufacturing_router)
 api_router.include_router(organizations_router)
+api_router.include_router(clinical_prefs_router)
+api_router.include_router(support_router)
+api_router.include_router(loyalty_router)

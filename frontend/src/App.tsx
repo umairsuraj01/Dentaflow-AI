@@ -28,6 +28,10 @@ const TechniciansPage = lazy(() => import('@/modules/admin').then(m => ({ defaul
 const ManufacturingDashboardPage = lazy(() => import('@/modules/manufacturing').then(m => ({ default: m.ManufacturingDashboardPage })));
 const OrderDetailPage = lazy(() => import('@/modules/manufacturing').then(m => ({ default: m.OrderDetailPage })));
 const OrgSettingsPage = lazy(() => import('@/modules/organizations').then(m => ({ default: m.OrgSettingsPage })));
+const ClinicalPreferencesPage = lazy(() => import('@/pages/ClinicalPreferencesPage').then(m => ({ default: m.ClinicalPreferencesPage })));
+const SupportPage = lazy(() => import('@/modules/support').then(m => ({ default: m.SupportPage })));
+const TicketDetailPage = lazy(() => import('@/modules/support').then(m => ({ default: m.TicketDetailPage })));
+const LoyaltyPage = lazy(() => import('@/modules/loyalty').then(m => ({ default: m.LoyaltyPage })));
 const DemoPage = lazy(() => import('@/pages/DemoPage').then(m => ({ default: m.DemoPage })));
 const TermsPage = lazy(() => import('@/pages/TermsPage').then(m => ({ default: m.TermsPage })));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
@@ -77,6 +81,10 @@ export default function App() {
             <Route path="/admin/technicians" element={<TechniciansPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path={ROUTES.ORG_SETTINGS} element={<OrgSettingsPage />} />
+            <Route path={ROUTES.CLINICAL_PREFERENCES} element={<ClinicalPreferencesPage />} />
+            <Route path={ROUTES.SUPPORT} element={<SupportPage />} />
+            <Route path="/support/:id" element={<TicketDetailPage />} />
+            <Route path={ROUTES.LOYALTY} element={<LoyaltyPage />} />
             <Route path="/viewer-test" element={<Viewer3DTestPage />} />
           </Route>
 

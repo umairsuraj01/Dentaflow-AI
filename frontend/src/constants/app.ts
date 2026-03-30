@@ -83,5 +83,8 @@ export const ROUTES = {
   BILLING: '/billing',
   MANUFACTURING: '/manufacturing',
   ORG_SETTINGS: '/settings/organization',
+  CLINICAL_PREFERENCES: '/clinical-preferences',
+  SUPPORT: '/support',
+  LOYALTY: '/loyalty',
   ADMIN: '/admin',
 } as const;

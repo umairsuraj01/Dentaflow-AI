@@ -21,6 +21,10 @@ from app.models.notification import Notification
 from app.models.manufacturing_order import ManufacturingOrder
 from app.models.organization import Organization
 from app.models.org_invite import OrgInvite
+from app.models.clinical_preferences import ClinicalPreferences
+from app.models.support_ticket import SupportTicket, TicketComment
+from app.models.loyalty import LoyaltyAccount, LoyaltyTransaction
+from app.models.case_assessment import CaseAssessment
 
 __all__ = [
     "User",
@@ -43,4 +47,10 @@ __all__ = [
     "ManufacturingOrder",
     "Organization",
     "OrgInvite",
+    "ClinicalPreferences",
+    "SupportTicket",
+    "TicketComment",
+    "LoyaltyAccount",
+    "LoyaltyTransaction",
+    "CaseAssessment",
 ]

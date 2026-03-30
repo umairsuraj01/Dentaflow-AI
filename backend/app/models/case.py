@@ -85,6 +85,9 @@ class Case(Base):
     managed_by_platform: Mapped[bool] = mapped_column(
         Boolean, default=False
     )
+    parent_case_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True
+    )
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

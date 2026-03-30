@@ -91,6 +91,25 @@ export interface CaseCreateRequest {
   treatment_goals?: string;
   special_instructions?: string;
   target_turnaround_days?: number;
+  patient_type?: string;
+  retainer_preference?: string;
+  passive_aligners?: string;
+  aligner_shipment?: string;
+  rescan_after_ipr?: boolean;
+  midline_instruction?: string;
+  overjet_instruction?: string;
+  overbite_instruction?: string;
+  crossbite_instruction?: string;
+  right_canine_class?: string;
+  left_canine_class?: string;
+  right_molar_class?: string;
+  left_molar_class?: string;
+  ipr_preference?: string;
+  proclination_preference?: string;
+  expansion_preference?: string;
+  extraction_preference?: string;
+  ipr_prescription?: string;
+  auxiliary_type?: string;
 }
 
 export interface DashboardStats {
