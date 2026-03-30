@@ -42,6 +42,10 @@ export const TOOTH_INSTRUCTION_META = {
   SENSITIVE_ROOT: { label: 'Sensitive Root', color: '#D97706', icon: 'alert-triangle' },
   ANKYLOSIS_SUSPECTED: { label: 'Ankylosis Suspected', color: '#B45309', icon: 'lock' },
   CUSTOM_NOTE: { label: 'Custom Clinical Note', color: '#6B7280', icon: 'file-text' },
+  IPR_PLANNED: { label: 'IPR Planned', color: '#7C3AED', icon: 'scissors' },
+  NO_IPR: { label: 'No IPR', color: '#64748B', icon: 'slash' },
+  NO_ELASTIC: { label: 'No Elastic', color: '#475569', icon: 'ban' },
+  DO_NOT_MOVE: { label: 'Do Not Move', color: '#3B82F6', icon: 'lock' },
 } as const;
 
 export type ToothInstructionType = keyof typeof TOOTH_INSTRUCTION_META;

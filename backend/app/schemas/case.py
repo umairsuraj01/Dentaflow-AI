@@ -19,6 +19,26 @@ class CaseCreate(BaseModel):
     treatment_goals: str | None = None
     special_instructions: str | None = None
     target_turnaround_days: int = Field(3, ge=0, le=30)
+    # Clinical fields
+    patient_type: str | None = None
+    retainer_preference: str | None = None
+    passive_aligners: str | None = None
+    aligner_shipment: str | None = None
+    rescan_after_ipr: bool = False
+    midline_instruction: str | None = None
+    overjet_instruction: str | None = None
+    overbite_instruction: str | None = None
+    crossbite_instruction: str | None = None
+    right_canine_class: str | None = None
+    left_canine_class: str | None = None
+    right_molar_class: str | None = None
+    left_molar_class: str | None = None
+    ipr_preference: str | None = None
+    proclination_preference: str | None = None
+    expansion_preference: str | None = None
+    extraction_preference: str | None = None
+    ipr_prescription: str | None = None
+    auxiliary_type: str | None = None
 
 
 class CaseUpdate(BaseModel):
@@ -31,6 +51,25 @@ class CaseUpdate(BaseModel):
     treatment_goals: str | None = None
     special_instructions: str | None = None
     target_turnaround_days: int | None = Field(None, ge=0, le=30)
+    patient_type: str | None = None
+    retainer_preference: str | None = None
+    passive_aligners: str | None = None
+    aligner_shipment: str | None = None
+    rescan_after_ipr: bool | None = None
+    midline_instruction: str | None = None
+    overjet_instruction: str | None = None
+    overbite_instruction: str | None = None
+    crossbite_instruction: str | None = None
+    right_canine_class: str | None = None
+    left_canine_class: str | None = None
+    right_molar_class: str | None = None
+    left_molar_class: str | None = None
+    ipr_preference: str | None = None
+    proclination_preference: str | None = None
+    expansion_preference: str | None = None
+    extraction_preference: str | None = None
+    ipr_prescription: str | None = None
+    auxiliary_type: str | None = None
 
 
 class CaseAssign(BaseModel):
@@ -117,6 +156,26 @@ class CaseResponse(BaseModel):
     chief_complaint: str | None = None
     treatment_goals: str | None = None
     special_instructions: str | None = None
+    patient_type: str | None = None
+    retainer_preference: str | None = None
+    passive_aligners: str | None = None
+    aligner_shipment: str | None = None
+    rescan_after_ipr: bool = False
+    midline_instruction: str | None = None
+    overjet_instruction: str | None = None
+    overbite_instruction: str | None = None
+    crossbite_instruction: str | None = None
+    right_canine_class: str | None = None
+    left_canine_class: str | None = None
+    right_molar_class: str | None = None
+    left_molar_class: str | None = None
+    ipr_preference: str | None = None
+    proclination_preference: str | None = None
+    expansion_preference: str | None = None
+    extraction_preference: str | None = None
+    ipr_prescription: str | None = None
+    auxiliary_type: str | None = None
+    managed_by_platform: bool = False
     target_turnaround_days: int
     price_usd: float | None = None
     due_date: datetime | None = None

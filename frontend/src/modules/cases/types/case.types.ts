@@ -8,7 +8,11 @@ export type CasePriority = 'NORMAL' | 'URGENT' | 'RUSH';
 export type TreatmentType = 'FULL_ARCH' | 'UPPER_ONLY' | 'LOWER_ONLY' | 'BOTH_ARCHES';
 export type FileType =
   | 'UPPER_SCAN' | 'LOWER_SCAN' | 'BITE_SCAN' | 'PHOTO'
-  | 'XRAY' | 'TREATMENT_PLAN' | 'ALIGNER_FILES' | 'REPORT' | 'OTHER';
+  | 'XRAY' | 'TREATMENT_PLAN' | 'ALIGNER_FILES' | 'REPORT' | 'OTHER'
+  | 'FRONT_FACE' | 'SIDE_PROFILE' | 'SMILE_PHOTO'
+  | 'UPPER_OCCLUSAL_PHOTO' | 'LOWER_OCCLUSAL_PHOTO'
+  | 'FRONT_INTRAORAL' | 'LEFT_BUCCAL' | 'RIGHT_BUCCAL'
+  | 'LATERAL_CEPH' | 'PANORAMIC_XRAY';
 
 export interface CaseFile {
   id: string;
@@ -47,6 +51,25 @@ export interface Case {
   chief_complaint: string | null;
   treatment_goals: string | null;
   special_instructions: string | null;
+  patient_type: string | null;
+  retainer_preference: string | null;
+  passive_aligners: string | null;
+  aligner_shipment: string | null;
+  rescan_after_ipr: boolean;
+  midline_instruction: string | null;
+  overjet_instruction: string | null;
+  overbite_instruction: string | null;
+  crossbite_instruction: string | null;
+  right_canine_class: string | null;
+  left_canine_class: string | null;
+  right_molar_class: string | null;
+  left_molar_class: string | null;
+  ipr_preference: string | null;
+  proclination_preference: string | null;
+  expansion_preference: string | null;
+  extraction_preference: string | null;
+  ipr_prescription: string | null;
+  auxiliary_type: string | null;
   target_turnaround_days: number;
   price_usd: number | null;
   due_date: string | null;

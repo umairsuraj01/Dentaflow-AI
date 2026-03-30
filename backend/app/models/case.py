@@ -48,6 +48,32 @@ class Case(Base):
     chief_complaint: Mapped[str | None] = mapped_column(Text, nullable=True)
     treatment_goals: Mapped[str | None] = mapped_column(Text, nullable=True)
     special_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Clinical fields (ClearPath-equivalent)
+    patient_type: Mapped[str | None] = mapped_column(String(20), nullable=True)  # ADULT / TEEN
+    retainer_preference: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    passive_aligners: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    aligner_shipment: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    rescan_after_ipr: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Treatment instructions — occlusion
+    midline_instruction: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    overjet_instruction: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    overbite_instruction: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    crossbite_instruction: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    right_canine_class: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    left_canine_class: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    right_molar_class: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    left_molar_class: Mapped[str | None] = mapped_column(String(10), nullable=True)
+
+    # Treatment instructions — preferences
+    ipr_preference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    proclination_preference: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    expansion_preference: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    extraction_preference: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    ipr_prescription: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    auxiliary_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     target_turnaround_days: Mapped[int] = mapped_column(Integer, default=3)
     price_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(
