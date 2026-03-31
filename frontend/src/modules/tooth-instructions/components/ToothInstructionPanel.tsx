@@ -163,6 +163,16 @@ export function ToothInstructionPanel({ instructions, onAdd, onRemove, disabled 
   }, [selectedTooth, formType, formSeverity, formNumeric, formNote, onAdd]);
 
   /* ---------------------------------------------------------------- */
+  /*  Get tooth width for tight packing                                */
+  /* ---------------------------------------------------------------- */
+  const TOOTH_SCALE = 0.5;
+  const getToothWidth = (fdi: number): number => {
+    const type = getToothType(fdi);
+    const data = CROWN_PATHS[type] || CROWN_PATHS.central;
+    return data.w * TOOTH_SCALE;
+  };
+
+  /* ---------------------------------------------------------------- */
   /*  Render a single tooth                                            */
   /* ---------------------------------------------------------------- */
   const renderTooth = (fdi: number, x: number, y: number, isUpper: boolean) => {
@@ -172,12 +182,11 @@ export function ToothInstructionPanel({ instructions, onAdd, onRemove, disabled 
     const hasInstructions = toothInst.length > 0;
     const isSelected = selectedTooth === fdi;
 
-    const cellW = 42;
-    const toothScale = 0.45;
+    const toothScale = TOOTH_SCALE;
     const scaledW = data.w * toothScale;
     const scaledH = data.h * toothScale;
-    const offsetX = x + (cellW - scaledW) / 2;
-    const toothY = y + 2;
+    const offsetX = x; // no centering — tight pack
+    const toothY = y;
 
     // Determine colors by instruction type
     const isExtract = hasInstruction(fdi, 'EXTRACTION_PLANNED') || hasInstruction(fdi, 'RECENTLY_EXTRACTED');
@@ -202,58 +211,57 @@ export function ToothInstructionPanel({ instructions, onAdd, onRemove, disabled 
       : hasInstructions ? '#0EA5E9'
       : '#F59E0B';
 
+    const cx = x + scaledW / 2; // center x of this tooth
+
     return (
       <g key={fdi} onClick={() => handleToothClick(fdi)} className="cursor-pointer group" role="button" tabIndex={0}>
-        {/* Hover bg */}
-        <rect x={x} y={y - 2} width={cellW} height={scaledH + 22} rx={6}
-          className="fill-transparent group-hover:fill-blue-50/60 transition-colors duration-200" />
-
-        {/* Tooth shape */}
+        {/* Tooth shape — tightly packed, no gap */}
         <g transform={`translate(${offsetX}, ${toothY}) scale(${toothScale}) ${!isUpper ? `translate(0, ${data.h}) scale(1, -1)` : ''}`}>
-          <path d={data.root} fill="#FFF7ED" stroke="#FDBA74" strokeWidth={1.5} strokeLinecap="round" />
-          <path d={data.crown} fill={crownFill} stroke={crownStroke} strokeWidth={isSelected ? 2.5 : 1.5} strokeLinejoin="round" />
+          <path d={data.root} fill="#FFF7ED" stroke="#FDBA74" strokeWidth={1.2} strokeLinecap="round" />
+          <path d={data.crown} fill={crownFill} stroke={crownStroke} strokeWidth={isSelected ? 2.5 : 1.2} strokeLinejoin="round"
+            className="group-hover:brightness-95 transition-all" />
         </g>
 
         {/* Extract X icon */}
         {isExtract && (
-          <g transform={`translate(${x + cellW / 2}, ${toothY + scaledH * 0.3})`}>
-            <line x1={-6} y1={-6} x2={6} y2={6} stroke="#DC2626" strokeWidth={2.5} strokeLinecap="round" />
-            <line x1={6} y1={-6} x2={-6} y2={6} stroke="#DC2626" strokeWidth={2.5} strokeLinecap="round" />
+          <g transform={`translate(${cx}, ${toothY + scaledH * 0.3})`}>
+            <line x1={-5} y1={-5} x2={5} y2={5} stroke="#DC2626" strokeWidth={2} strokeLinecap="round" />
+            <line x1={5} y1={-5} x2={-5} y2={5} stroke="#DC2626" strokeWidth={2} strokeLinecap="round" />
           </g>
         )}
 
         {/* Crown cap icon */}
         {isCrown && (
           <path
-            d={`M${x + cellW / 2 - 6},${toothY + 2} l3,-5 l3,3 l3,-3 l3,5 z`}
-            fill="#A78BFA" stroke="#7C3AED" strokeWidth={0.8}
+            d={`M${cx - 5},${toothY + 2} l2.5,-4 l2.5,2.5 l2.5,-2.5 l2.5,4 z`}
+            fill="#A78BFA" stroke="#7C3AED" strokeWidth={0.7}
           />
         )}
 
         {/* Lock icon for Don't Move */}
         {isDontMove && (
-          <g transform={`translate(${x + cellW / 2 - 4}, ${toothY + scaledH * 0.25})`}>
-            <rect x={0} y={3} width={8} height={6} rx={1} fill="#3B82F6" />
-            <path d="M1.5,3 V1.5 A2.5,2.5 0 0,1 6.5,1.5 V3" fill="none" stroke="#3B82F6" strokeWidth={1.5} />
+          <g transform={`translate(${cx - 3.5}, ${toothY + scaledH * 0.25})`}>
+            <rect x={0} y={3} width={7} height={5} rx={1} fill="#3B82F6" />
+            <path d="M1.5,3 V1.5 A2,2 0 0,1 5.5,1.5 V3" fill="none" stroke="#3B82F6" strokeWidth={1.2} />
           </g>
         )}
 
         {/* Implant screw icon */}
         {isImplant && (
-          <g transform={`translate(${x + cellW / 2 - 3}, ${toothY + scaledH * 0.5})`}>
-            <line x1={3} y1={0} x2={3} y2={10} stroke="#F59E0B" strokeWidth={2} strokeLinecap="round" />
-            <line x1={0} y1={2} x2={6} y2={2} stroke="#F59E0B" strokeWidth={1} />
-            <line x1={0.5} y1={5} x2={5.5} y2={5} stroke="#F59E0B" strokeWidth={1} />
-            <line x1={1} y1={8} x2={5} y2={8} stroke="#F59E0B" strokeWidth={1} />
+          <g transform={`translate(${cx - 2.5}, ${toothY + scaledH * 0.5})`}>
+            <line x1={2.5} y1={0} x2={2.5} y2={8} stroke="#F59E0B" strokeWidth={1.5} strokeLinecap="round" />
+            <line x1={0} y1={2} x2={5} y2={2} stroke="#F59E0B" strokeWidth={0.8} />
+            <line x1={0.5} y1={4.5} x2={4.5} y2={4.5} stroke="#F59E0B" strokeWidth={0.8} />
+            <line x1={1} y1={7} x2={4} y2={7} stroke="#F59E0B" strokeWidth={0.8} />
           </g>
         )}
 
         {/* FDI/Universal/Palmer number */}
         <text
-          x={x + cellW / 2} y={toothY + scaledH + 14}
+          x={cx} y={toothY + scaledH + 11}
           textAnchor="middle"
           className={cn(
-            'text-[9px] font-semibold select-none transition-colors duration-200',
+            'text-[8px] font-semibold select-none transition-colors duration-200',
             isSelected ? 'fill-blue-600' : 'fill-slate-500 group-hover:fill-slate-700',
           )}
         >
@@ -263,20 +271,20 @@ export function ToothInstructionPanel({ instructions, onAdd, onRemove, disabled 
         {/* Instruction dots */}
         {hasInstructions && !isExtract && !isCrown && !isImplant && !isDontMove && (
           <g>
-            {toothInst.slice(0, 3).map((inst, idx) => {
+            {toothInst.slice(0, 2).map((inst, idx) => {
               const meta = TOOTH_INSTRUCTION_META[inst.instruction_type as ToothInstructionType];
               return (
-                <circle key={idx} cx={x + cellW / 2 - 4 + idx * 5} cy={y - 4} r={2.5}
-                  fill={meta?.color || '#6B7280'} stroke="white" strokeWidth={1} />
+                <circle key={idx} cx={cx - 2 + idx * 4} cy={toothY - 3} r={2}
+                  fill={meta?.color || '#6B7280'} stroke="white" strokeWidth={0.8} />
               );
             })}
           </g>
         )}
 
-        {/* Selection ring */}
+        {/* Selection highlight */}
         {isSelected && (
-          <rect x={x + 1} y={y - 3} width={cellW - 2} height={scaledH + 22} rx={6}
-            fill="none" stroke="#3B82F6" strokeWidth={2} strokeDasharray="4,2" className="animate-pulse" />
+          <rect x={x - 1} y={toothY - 2} width={scaledW + 2} height={scaledH + 4} rx={3}
+            fill="none" stroke="#3B82F6" strokeWidth={1.5} strokeDasharray="3,2" className="animate-pulse" />
         )}
       </g>
     );
@@ -307,22 +315,33 @@ export function ToothInstructionPanel({ instructions, onAdd, onRemove, disabled 
   };
 
   /* ---------------------------------------------------------------- */
-  /*  Render a row                                                     */
+  /*  Render a row — tight packed, no gaps                             */
   /* ---------------------------------------------------------------- */
-  const renderToothRow = (teeth: readonly number[], y: number, isUpper: boolean) => (
+  const renderToothRow = (teeth: readonly number[], y: number, isUpper: boolean) => {
+    // Compute cumulative x positions (tight packing)
+    const positions: number[] = [];
+    let curX = 4; // small left margin
+    for (const fdi of teeth) {
+      positions.push(curX);
+      curX += getToothWidth(fdi);
+    }
+
+    return (
     <g>
       {teeth.map((fdi, i) => {
-        const x = 8 + i * 42;
+        const x = positions[i];
+        const w = getToothWidth(fdi);
         return (
           <g key={fdi}>
             {renderTooth(fdi, x, y, isUpper)}
-            {/* IPR gap between adjacent teeth (not at the end or at midline) */}
-            {i < teeth.length - 1 && i !== 7 && renderIPRGap(fdi, teeth[i + 1], 8 + (i + 1) * 42 - 1, y, 32)}
+            {/* IPR line between adjacent teeth — only appears when IPR is set or on hover */}
+            {i < teeth.length - 1 && i !== 7 && renderIPRGap(fdi, teeth[i + 1], x + w, y, 28)}
           </g>
         );
       })}
     </g>
   );
+  };
 
   const upperTeeth = [...UPPER_TEETH_LEFT, ...UPPER_TEETH_RIGHT];
   const lowerTeeth = [...LOWER_TEETH_LEFT, ...LOWER_TEETH_RIGHT];
@@ -384,9 +403,9 @@ export function ToothInstructionPanel({ instructions, onAdd, onRemove, disabled 
           <div className="text-center mb-1">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Upper Arch</span>
           </div>
-          <svg viewBox="0 0 680 55" className="mx-auto w-full max-w-[680px]">
+          <svg viewBox="0 0 270 48" className="mx-auto w-full max-w-[700px]">
             {renderToothRow(upperTeeth, 4, true)}
-            <line x1={340} y1={0} x2={340} y2={55} stroke="#E2E8F0" strokeWidth={1} strokeDasharray="3,3" />
+            <line x1={135} y1={0} x2={135} y2={48} stroke="#E2E8F0" strokeWidth={0.5} strokeDasharray="2,2" />
           </svg>
 
           <div className="flex items-center gap-3 my-3 px-4">
@@ -400,9 +419,9 @@ export function ToothInstructionPanel({ instructions, onAdd, onRemove, disabled 
           <div className="text-center mb-1">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Lower Arch</span>
           </div>
-          <svg viewBox="0 0 680 55" className="mx-auto w-full max-w-[680px]">
+          <svg viewBox="0 0 270 48" className="mx-auto w-full max-w-[700px]">
             {renderToothRow(lowerTeeth, 4, false)}
-            <line x1={340} y1={0} x2={340} y2={55} stroke="#E2E8F0" strokeWidth={1} strokeDasharray="3,3" />
+            <line x1={135} y1={0} x2={135} y2={48} stroke="#E2E8F0" strokeWidth={0.5} strokeDasharray="2,2" />
           </svg>
         </div>
 
