@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { ROUTES } from '@/constants';
 import { cn, formatDate } from '@/lib/utils';
+import { useAuthStore } from '@/modules/auth';
 import { useCases } from '../hooks/useCases';
 import { CaseStatusBadge } from '../components/CaseStatusBadge';
 import { CasePriorityBadge } from '../components/CasePriorityBadge';
@@ -33,6 +34,8 @@ const fadeUp = {
 
 export function CasesListPage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const canCreateCase = ['DENTIST', 'SUPER_ADMIN'].includes(user?.role || '');
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -64,13 +67,15 @@ export function CasesListPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <Button
-            variant="gradient"
-            onClick={() => navigate(ROUTES.CASES_NEW)}
-            className="shadow-button hover:shadow-glow-blue transition-all duration-300 hover:-translate-y-0.5"
-          >
-            <Plus className="mr-2 h-4 w-4" /> New Case
-          </Button>
+          {canCreateCase && (
+            <Button
+              variant="gradient"
+              onClick={() => navigate(ROUTES.CASES_NEW)}
+              className="shadow-button hover:shadow-glow-blue transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <Plus className="mr-2 h-4 w-4" /> New Case
+            </Button>
+          )}
         </motion.div>
       </div>
 
@@ -151,13 +156,15 @@ export function CasesListPage() {
                 : 'Get started by creating your first dental case.'}
             </p>
           </div>
-          <Button
-            variant="gradient"
-            onClick={() => navigate(ROUTES.CASES_NEW)}
-            className="mt-2 shadow-button hover:shadow-glow-blue transition-all duration-300"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Create your first case
-          </Button>
+          {canCreateCase && (
+            <Button
+              variant="gradient"
+              onClick={() => navigate(ROUTES.CASES_NEW)}
+              className="mt-2 shadow-button hover:shadow-glow-blue transition-all duration-300"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Create your first case
+            </Button>
+          )}
         </motion.div>
       ) : (
         <>

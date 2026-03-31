@@ -23,14 +23,19 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  // Everyone
   { label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.DASHBOARD, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
   { label: 'Cases', icon: FolderOpen, path: ROUTES.CASES, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
-  { label: 'Manufacturing', icon: Factory, path: ROUTES.MANUFACTURING, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
+  // Technician & Lab only
+  { label: 'Manufacturing', icon: Factory, path: ROUTES.MANUFACTURING, roles: ['SUPER_ADMIN', 'TECHNICIAN', 'LAB_MANAGER'] },
+  // Doctor only
   { label: 'Billing', icon: CreditCard, path: ROUTES.BILLING, roles: ['SUPER_ADMIN', 'DENTIST'] },
   { label: 'Clinical Prefs', icon: Settings2, path: ROUTES.CLINICAL_PREFERENCES, roles: ['DENTIST', 'SUPER_ADMIN'] },
-  { label: 'Support', icon: HeadphonesIcon, path: ROUTES.SUPPORT, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
   { label: 'Loyalty', icon: Gift, path: ROUTES.LOYALTY, roles: ['DENTIST', 'SUPER_ADMIN'] },
-  { label: 'Organization', icon: Building2, path: ROUTES.ORG_SETTINGS, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
+  // Everyone
+  { label: 'Support', icon: HeadphonesIcon, path: ROUTES.SUPPORT, roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
+  { label: 'Organization', icon: Building2, path: ROUTES.ORG_SETTINGS, roles: ['SUPER_ADMIN', 'DENTIST', 'LAB_MANAGER'] },
+  // Admin only
   { label: 'Admin', icon: Users, path: ROUTES.ADMIN, roles: ['SUPER_ADMIN', 'LAB_MANAGER'] },
   { label: 'Settings', icon: Settings, path: '/settings', roles: ['SUPER_ADMIN', 'DENTIST', 'TECHNICIAN', 'LAB_MANAGER'] },
 ];
