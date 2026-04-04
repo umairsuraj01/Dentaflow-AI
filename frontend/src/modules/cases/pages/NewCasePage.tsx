@@ -1,7 +1,8 @@
 // NewCasePage.tsx — 4-step new case wizard with patient, details, files + instructions, review.
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, Check, Search, UserPlus,
@@ -11,6 +12,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { ROUTES, PRICING, TURNAROUND } from '@/constants';
+import api from '@/lib/api';
+import type { ApiResponse } from '@/types/common';
 import { cn } from '@/lib/utils';
 import { usePatients } from '@/modules/patients/hooks/usePatients';
 import { useCases } from '../hooks/useCases';
@@ -67,6 +70,15 @@ export function NewCasePage() {
   const [alignerShipment, _setAlignerShipment] = useState('ALL_AT_ONCE');
   const [rescanAfterIpr, _setRescanAfterIpr] = useState(false);
 
+  // Fetch clinical preferences to auto-populate
+  const { data: clinicalPrefs } = useQuery({
+    queryKey: ['clinical-preferences'],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<Record<string, string | number | null>>>('/clinical-preferences');
+      return res.data.data;
+    },
+  });
+
   // Treatment instructions state
   const [txInstructions, setTxInstructions] = useState({
     midline_instruction: '', overjet_instruction: '', overbite_instruction: '',
@@ -75,7 +87,19 @@ export function NewCasePage() {
     proclination_preference: '', expansion_preference: '', extraction_preference: '',
     ipr_prescription: '', auxiliary_type: '',
   });
-  void setTxInstructions; // used in submit via spread
+  // Auto-populate from clinical preferences when loaded
+  useEffect(() => {
+    if (clinicalPrefs) {
+      setTxInstructions((prev) => ({
+        ...prev,
+        midline_instruction: (clinicalPrefs.default_midline as string) || prev.midline_instruction,
+        proclination_preference: (clinicalPrefs.default_proclination as string) || prev.proclination_preference,
+        expansion_preference: (clinicalPrefs.arch_expansion as string) || prev.expansion_preference,
+        extraction_preference: (clinicalPrefs.default_extraction as string) || prev.extraction_preference,
+        ipr_preference: (clinicalPrefs.default_ipr_preference as string) || prev.ipr_preference,
+      }));
+    }
+  }, [clinicalPrefs]);
 
   // Step 3 state
   const [caseId, _setCaseId] = useState<string | undefined>();
