@@ -103,11 +103,18 @@ def _add_routes(app: FastAPI) -> None:
 
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str) -> FileResponse:
-            """Serve the SPA index.html for all non-API routes."""
+            """Serve the SPA index.html for all non-API routes with no-cache headers."""
             file_path = static_dir / full_path
             if file_path.is_file():
-                return FileResponse(str(file_path))
-            return FileResponse(str(static_dir / "index.html"))
+                resp = FileResponse(str(file_path))
+            else:
+                resp = FileResponse(str(static_dir / "index.html"))
+            # Prevent browser caching of HTML (JS/CSS have hashed names so they auto-bust)
+            if full_path.endswith('.html') or '.' not in full_path.split('/')[-1]:
+                resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                resp.headers["Pragma"] = "no-cache"
+                resp.headers["Expires"] = "0"
+            return resp
 
 
 app = create_app()
