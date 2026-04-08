@@ -1,6 +1,6 @@
 # DentaFlow AI
 
-AI-Powered Dental Treatment Planning Platform.
+AI-Powered Dental Treatment Planning Platform for Doctors.
 
 ## Architecture
 
@@ -73,3 +73,6 @@ npm run dev
 | DENTIST | Upload cases, review results, billing |
 | TECHNICIAN | Process cases, design work |
 | LAB_MANAGER | Manage technicians, quality oversight |
+
+## Maintainer: M. Umair
+Actively maintaining, updating, and improving the project
